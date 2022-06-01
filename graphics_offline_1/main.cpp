@@ -219,22 +219,24 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			cameraHeight -= 3.0;
+			c_pos = move_along_unit_vect(c_pos, l, -2);
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-			cameraHeight += 3.0;
+			c_pos = move_along_unit_vect(c_pos, l, 2);
 			break;
 
 		case GLUT_KEY_RIGHT:
-			cameraAngle += 0.03;
+			c_pos = move_along_unit_vect(c_pos, r, 2);
 			break;
 		case GLUT_KEY_LEFT:
-			cameraAngle -= 0.03;
+			c_pos = move_along_unit_vect(c_pos, r, -2);
 			break;
 
 		case GLUT_KEY_PAGE_UP:
+            c_pos = move_along_unit_vect(c_pos, u, 2);
 			break;
 		case GLUT_KEY_PAGE_DOWN:
+            c_pos = move_along_unit_vect(c_pos, u, -2);
 			break;
 
 		case GLUT_KEY_INSERT:
@@ -351,6 +353,11 @@ void init(){
     r.x = -1/sqrt(2); r.y = 1/sqrt(2); r.z = 0;
     l.x = -1/sqrt(2); l.y = -1/sqrt(2); l.z = 0;
     c_pos.x = 100; c_pos.y = 100; c_pos.z = 0;
+
+//    u.x = 0; u.y = 1; u.z = 0;
+//    r.x = 1; r.y = 0; r.z = 0;
+//    l.x = 0; l.y = 0; l.z = -1;
+//    c_pos.x = 0; c_pos.y = 0; c_pos.z = 200;
 	//=============================================
 
 	//clear the screen
