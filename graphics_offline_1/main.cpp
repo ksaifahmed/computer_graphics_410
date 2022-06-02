@@ -23,8 +23,8 @@ double angle;
 //Global camera data ===============================
 point c_pos, u, l, r;
 //Shape data=================================================
-double square_dim = 20;
-double sp_radius = 20;
+double square_dim = 18;
+double sp_radius = 18;
 
 
 void drawAxes()
@@ -79,59 +79,6 @@ void drawSquare(double a)
 		glVertex3f(-a,-a,0);
 		glVertex3f(-a, a,0);
 	}glEnd();
-}
-
-
-void drawCircle(double radius,int segments)
-{
-    int i;
-    struct point points[100];
-    glColor3f(0.7,0.7,0.7);
-    //generate points
-    for(i=0;i<=segments;i++)
-    {
-        points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
-        points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
-    }
-    //draw segments using generated points
-    for(i=0;i<segments;i++)
-    {
-        glBegin(GL_LINES);
-        {
-			glVertex3f(points[i].x,points[i].y,0);
-			glVertex3f(points[i+1].x,points[i+1].y,0);
-        }
-        glEnd();
-    }
-}
-
-void drawCone(double radius,double height,int segments)
-{
-    int i;
-    double shade;
-    struct point points[100];
-    //generate points
-    for(i=0;i<=segments;i++)
-    {
-        points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
-        points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
-    }
-    //draw triangles using generated points
-    for(i=0;i<segments;i++)
-    {
-        //create shading effect
-        if(i<segments/2)shade=2*(double)i/(double)segments;
-        else shade=2*(1.0-(double)i/(double)segments);
-        glColor3f(shade,shade,shade);
-
-        glBegin(GL_TRIANGLES);
-        {
-            glVertex3f(0,0,height);
-			glVertex3f(points[i].x,points[i].y,0);
-			glVertex3f(points[i+1].x,points[i+1].y,0);
-        }
-        glEnd();
-    }
 }
 
 
@@ -265,7 +212,7 @@ void drawAndTransformedSquares()
 }
 
 
-void drawTransformedSpheres()
+void drawTopSpheres()
 {
     glPushMatrix();
     {
@@ -298,48 +245,23 @@ void drawTransformedSpheres()
         drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
-    //===================================================
+}
 
-    glPushMatrix();
-    glRotated(180, 0, 0, 0); //flip-upper 4 spheres
-    //===================================================
-    glPushMatrix();
-    {
-        glTranslated(square_dim, square_dim, square_dim);
-        glRotated(0, 0, 0, 1);
-        drawSphereSplice(sp_radius, 24, 20);
-    }
-    glPopMatrix();
+void drawTransformedSpheres()
+{
+    drawTopSpheres();
 
     glPushMatrix();
     {
-        glTranslated(square_dim, -square_dim, square_dim);
-        glRotated(270, 0, 0, 1);
-        drawSphereSplice(sp_radius, 24, 20);
+        glRotated(180, 0, 0, 0); //flip frame of ref
+        drawTopSpheres();
     }
-    glPopMatrix();
 
-    glPushMatrix();
-    {
-        glTranslated(-square_dim, square_dim, square_dim);
-        glRotated(90, 0, 0, 1);
-        drawSphereSplice(sp_radius, 24, 20);
-    }
-    glPopMatrix();
-
-    glPushMatrix();
-    {
-        glTranslated(-square_dim, -square_dim, square_dim);
-        glRotated(180, 0, 0, 1);
-        drawSphereSplice(sp_radius, 24, 20);
-    }
-    glPopMatrix();
-    //============================================================
     glPopMatrix();
 }
 
 
-void drawTransformedCylinders()
+void drawVerticalCylinders()
 {
     //the vertical cylinders =======================
     glPushMatrix();
@@ -374,9 +296,64 @@ void drawTransformedCylinders()
     }
     glPopMatrix();
     //=============================================
-
 }
 
+
+void drawOneHorizontalCylinder()
+{
+    glPushMatrix();
+    {
+        glTranslated(square_dim, 0, square_dim);
+        glRotated(90, 1, 0, 0);
+        drawCylinderSplice(sp_radius, square_dim, 24, square_dim);
+    }
+    glPopMatrix();
+}
+
+void drawHorizontalCylinders()
+{
+    //the horizontal cylinders =======================
+    glPushMatrix();
+    {
+        glRotated(0, 0, 0, 1);
+        drawOneHorizontalCylinder();
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glRotated(90, 0, 0, 1); //z-axis rotations
+        drawOneHorizontalCylinder();
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glRotated(180, 0, 0, 1);
+        drawOneHorizontalCylinder();
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glRotated(270, 0, 0, 1);
+        drawOneHorizontalCylinder();
+    }
+    glPopMatrix();
+    //=============================================
+}
+
+
+void drawTransformedCylinders()
+{
+    drawVerticalCylinders();
+    drawHorizontalCylinders();
+
+    glPushMatrix();
+    glRotated(180, 0, 0, 0); //flip frame of reference
+    drawHorizontalCylinders();
+    glPopMatrix();
+}
 
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
@@ -538,16 +515,6 @@ void display(){
 	drawTransformedCylinders();
     drawAndTransformedSquares();
 
-    //drawCircle(30,24);
-
-    //drawCone(20,50,24);
-
-
-
-
-
-
-	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
 
@@ -571,11 +538,6 @@ void init(){
     r.x = -1/sqrt(2); r.y = 1/sqrt(2); r.z = 0;
     l.x = -1/sqrt(2); l.y = -1/sqrt(2); l.z = 0;
     c_pos.x = 100; c_pos.y = 100; c_pos.z = 0;
-
-//    u.x = 0; u.y = 1; u.z = 0;
-//    r.x = 1; r.y = 0; r.z = 0;
-//    l.x = 0; l.y = 0; l.z = -1;
-//    c_pos.x = 0; c_pos.y = 0; c_pos.z = 200;
 	//=============================================
 
 	//clear the screen
