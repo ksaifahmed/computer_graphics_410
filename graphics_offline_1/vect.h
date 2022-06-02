@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-
+#define pi (2*acos(0.0))
 
 struct point
 {
@@ -47,4 +47,19 @@ point move_along_unit_vect(point p, point uvect, double units)
     return p;
 }
 
+point cross_product(point a, point b)
+{
+    point p;
+    p.x = a.y*b.z - a.z*b.y;
+    p.y = a.z*b.x - a.x*b.z;
+    p.z = a.x*b.y - a.y*b.x;
+    return p;
+}
 
+
+void axis_rotation(point *l, point *u, point *r, double degrees)
+{
+    double rad = degrees * pi / 180.0;
+    *l = vect_add(vect_scale(*l, cos(rad)), vect_scale(*u, sin(rad)));
+    *u = cross_product(*r, *l);
+}

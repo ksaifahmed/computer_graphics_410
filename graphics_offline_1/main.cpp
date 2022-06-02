@@ -12,7 +12,6 @@
 #include "vect.h"
 
 
-#define pi (2*acos(0.0))
 
 double cameraHeight;
 double cameraAngle;
@@ -207,7 +206,32 @@ void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
 		case '1':
+			//drawgrid=1-drawgrid;
+			axis_rotation(&r, &l, &u, 3);
+			break;
+
+		case '2':
+			axis_rotation(&r, &l, &u, -3);
+			break;
+
+		case '3':
+			axis_rotation(&l, &u, &r, 3);
+			break;
+
+		case '4':
 			drawgrid=1-drawgrid;
+			axis_rotation(&l, &u, &r, -3);
+			break;
+
+
+		case '5':
+			drawgrid=1-drawgrid;
+			axis_rotation(&u, &r, &l, 3);
+			break;
+
+		case '6':
+			drawgrid=1-drawgrid;
+			axis_rotation(&u, &r, &l, -3);
 			break;
 
 		default:
