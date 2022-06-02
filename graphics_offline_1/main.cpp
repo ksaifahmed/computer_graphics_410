@@ -72,12 +72,12 @@ void drawGrid()
 
 void drawSquare(double a)
 {
-    //glColor3f(1.0,0.0,0.0);
+    glColor3f(1.0,1.0,1.0);
 	glBegin(GL_QUADS);{
-		glVertex3f( a, a,2);
-		glVertex3f( a,-a,2);
-		glVertex3f(-a,-a,2);
-		glVertex3f(-a, a,2);
+		glVertex3f( a, a,0);
+		glVertex3f( a,-a,0);
+		glVertex3f(-a,-a,0);
+		glVertex3f(-a, a,0);
 	}glEnd();
 }
 
@@ -140,6 +140,7 @@ void drawSphere(double radius,int slices,int stacks)
 	struct point points[100][100];
 	int i,j;
 	double h,r;
+	glColor3f(1,0,0);
 	//generate points
 	for(i=0;i<=stacks;i++)
 	{
@@ -155,7 +156,7 @@ void drawSphere(double radius,int slices,int stacks)
 	//draw quads using generated points
 	for(i=0;i<stacks;i++)
 	{
-        glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
 		for(j=0;j<slices;j++)
 		{
 			glBegin(GL_QUADS);{
@@ -172,9 +173,10 @@ void drawSphere(double radius,int slices,int stacks)
 
 void drawAndTransformedSquares()
 {
+    double dim = square_dim+sp_radius;
     glPushMatrix();
     {
-        glTranslated(0, 40, 0);
+        glTranslated(0, dim, 0);
         glRotated(90, 1, 0, 0);
         drawSquare(square_dim);
     }
@@ -182,7 +184,7 @@ void drawAndTransformedSquares()
 
     glPushMatrix();
     {
-        glTranslated(0, -40, 0);
+        glTranslated(0, -dim, 0);
         glRotated(90, 1, 0, 0);
         drawSquare(square_dim);
     }
@@ -190,7 +192,7 @@ void drawAndTransformedSquares()
 
     glPushMatrix();
     {
-        glTranslated(40, 0, 0);
+        glTranslated(dim, 0, 0);
         glRotated(90, 0, 1, 0);
         drawSquare(square_dim);
     }
@@ -199,7 +201,7 @@ void drawAndTransformedSquares()
 
     glPushMatrix();
     {
-        glTranslated(-40, 0, 0);
+        glTranslated(-dim, 0, 0);
         glRotated(90, 0, 1, 0);
         drawSquare(square_dim);
     }
@@ -208,14 +210,14 @@ void drawAndTransformedSquares()
 
     glPushMatrix();
     {
-        glTranslated(0, 0, 40);
+        glTranslated(0, 0, dim);
         drawSquare(square_dim);
     }
     glPopMatrix();
 
     glPushMatrix();
     {
-        glTranslated(0, 0, -40);
+        glTranslated(0, 0, -dim);
         drawSquare(square_dim);
     }
     glPopMatrix();
@@ -231,6 +233,68 @@ void drawTransformedSpheres()
         glRotated(0, 0, 0, 1);
         drawSphere(sp_radius, 24, 20);
     }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(square_dim, -square_dim, square_dim);
+        glRotated(270, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(-square_dim, square_dim, square_dim);
+        glRotated(90, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(-square_dim, -square_dim, square_dim);
+        glRotated(180, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+    //===================================================
+
+    glPushMatrix();
+    glRotated(180, 0, 0, 0); //flip-upper 4 spheres
+    //===================================================
+    glPushMatrix();
+    {
+        glTranslated(square_dim, square_dim, square_dim);
+        glRotated(0, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(square_dim, -square_dim, square_dim);
+        glRotated(270, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(-square_dim, square_dim, square_dim);
+        glRotated(90, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(-square_dim, -square_dim, square_dim);
+        glRotated(180, 0, 0, 1);
+        drawSphere(sp_radius, 24, 20);
+    }
+    glPopMatrix();
+    //============================================================
     glPopMatrix();
 }
 
@@ -251,18 +315,15 @@ void keyboardListener(unsigned char key, int x,int y){
 			break;
 
 		case '4':
-			drawgrid=1-drawgrid;
 			axis_rotation(&l, &u, &r, -3);
 			break;
 
 
 		case '5':
-			drawgrid=1-drawgrid;
 			axis_rotation(&u, &r, &l, 3);
 			break;
 
 		case '6':
-			drawgrid=1-drawgrid;
 			axis_rotation(&u, &r, &l, -3);
 			break;
 
@@ -271,6 +332,24 @@ void keyboardListener(unsigned char key, int x,int y){
 	}
 }
 
+
+void cube_to_sphere()
+{
+    if(square_dim > 0.0)
+    {
+        sp_radius += 1.0;
+        square_dim -= 1.0;
+    }
+}
+
+void sphere_to_cube()
+{
+    if(sp_radius > 0.0)
+    {
+        sp_radius -= 1.0;
+        square_dim += 1.0;
+    }
+}
 
 void specialKeyListener(int key, int x,int y){
 	switch(key){
@@ -299,8 +378,11 @@ void specialKeyListener(int key, int x,int y){
 			break;
 
 		case GLUT_KEY_HOME:
+            cube_to_sphere();
 			break;
+
 		case GLUT_KEY_END:
+		    sphere_to_cube();
 			break;
 
 		default:
