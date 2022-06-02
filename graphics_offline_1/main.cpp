@@ -135,7 +135,7 @@ void drawCone(double radius,double height,int segments)
 }
 
 
-void drawSphere(double radius,int slices,int stacks)
+void drawSphereSplice(double radius,int slices,int stacks)
 {
 	struct point points[100][100];
 	int i,j;
@@ -165,6 +165,46 @@ void drawSphere(double radius,int slices,int stacks)
 				glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
 				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
 				glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+			}glEnd();
+		}
+	}
+}
+
+
+void drawCylinderSplice(double radius, double height, int slices,int stacks)
+{
+	struct point points[100][100];
+	int i,j;
+	double h;
+	glColor3f(0,1,0);
+	//generate points
+	for(i=0;i<=stacks;i++)
+	{
+		h=height*sin(((double)i/(double)stacks)*(pi/2));
+		for(j=0;j<=slices;j++)
+		{
+			points[i][j].x=radius*cos(((double)j/(double)slices)*0.5*pi);
+			points[i][j].y=radius*sin(((double)j/(double)slices)*0.5*pi);
+			points[i][j].z=h;
+		}
+	}
+	//draw quads using generated points
+	for(i=0;i<stacks;i++)
+	{
+        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+		for(j=0;j<slices;j++)
+		{
+			glBegin(GL_QUADS);{
+			    //upper hemisphere
+				glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
+				glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+				glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+                //lower hemisphere
+                glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
+				glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
+				glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
+				glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
 			}glEnd();
 		}
 	}
@@ -231,7 +271,7 @@ void drawTransformedSpheres()
     {
         glTranslated(square_dim, square_dim, square_dim);
         glRotated(0, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
 
@@ -239,7 +279,7 @@ void drawTransformedSpheres()
     {
         glTranslated(square_dim, -square_dim, square_dim);
         glRotated(270, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
 
@@ -247,7 +287,7 @@ void drawTransformedSpheres()
     {
         glTranslated(-square_dim, square_dim, square_dim);
         glRotated(90, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
 
@@ -255,7 +295,7 @@ void drawTransformedSpheres()
     {
         glTranslated(-square_dim, -square_dim, square_dim);
         glRotated(180, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
     //===================================================
@@ -267,7 +307,7 @@ void drawTransformedSpheres()
     {
         glTranslated(square_dim, square_dim, square_dim);
         glRotated(0, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
 
@@ -275,7 +315,7 @@ void drawTransformedSpheres()
     {
         glTranslated(square_dim, -square_dim, square_dim);
         glRotated(270, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
 
@@ -283,7 +323,7 @@ void drawTransformedSpheres()
     {
         glTranslated(-square_dim, square_dim, square_dim);
         glRotated(90, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
 
@@ -291,12 +331,52 @@ void drawTransformedSpheres()
     {
         glTranslated(-square_dim, -square_dim, square_dim);
         glRotated(180, 0, 0, 1);
-        drawSphere(sp_radius, 24, 20);
+        drawSphereSplice(sp_radius, 24, 20);
     }
     glPopMatrix();
     //============================================================
     glPopMatrix();
 }
+
+
+void drawTransformedCylinders()
+{
+    //the vertical cylinders =======================
+    glPushMatrix();
+    {
+        glTranslated(square_dim, square_dim, 0);
+        glRotated(0, 0, 0, 1);
+        drawCylinderSplice(sp_radius, square_dim, 24, square_dim);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(-square_dim, square_dim, 0);
+        glRotated(90, 0, 0, 1);
+        drawCylinderSplice(sp_radius, square_dim, 24, square_dim);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(square_dim, -square_dim, 0);
+        glRotated(270, 0, 0, 1);
+        drawCylinderSplice(sp_radius, square_dim, 24, square_dim);
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    {
+        glTranslated(-square_dim, -square_dim, 0);
+        glRotated(180, 0, 0, 1);
+        drawCylinderSplice(sp_radius, square_dim, 24, square_dim);
+    }
+    glPopMatrix();
+    //=============================================
+
+}
+
 
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
@@ -453,9 +533,9 @@ void display(){
 	drawAxes();
 	drawGrid();
 
-    //glColor3f(1,0,0);
-    //drawSquare(10);
+
 	drawTransformedSpheres();
+	drawTransformedCylinders();
     drawAndTransformedSquares();
 
     //drawCircle(30,24);
