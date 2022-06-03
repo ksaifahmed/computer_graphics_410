@@ -20,7 +20,7 @@ double cameraAngle;
 double direction_angle;
 double wheel_rad;
 double wheel_thickness;
-double STEP_SIZE;
+double STEP_SIZE, axial_angle;
 point dir_vector; //where looking at
 point pos_vector; //position of wheel
 point curr_dir; //where to travel now
@@ -53,7 +53,7 @@ void drawGrid()
 	int i;
 	if(drawgrid==1)
 	{
-		glColor3f(0.8, 0.8, 0.8);	//grey
+		glColor3f(0.4, 0.4, 0.4);	//grey
 		glBegin(GL_LINES);{
 			for(i=-16;i<=16;i++){
 
@@ -74,10 +74,11 @@ void drawGrid()
 
 void drawRectangle(double l, double b)
 {
-    glColor3f(1.0,1.0,1.0);
 	glBegin(GL_QUADS);{
+        glColor3f(0.7, 0.7, 0.0);
 		glVertex3f( l, b,0);
 		glVertex3f( l,-b,0);
+        glColor3f(0.3, 0.3, 0.6);
 		glVertex3f(-l,-b,0);
 		glVertex3f(-l, b,0);
 	}glEnd();
@@ -128,15 +129,43 @@ void drawCylinderSplice(double radius, double height, int slices,int stacks)
 }
 
 
-void drawWheelRim()
+void drawWheelParts()
 {
+    //translation on movement
     glTranslated(curr_dir.x, curr_dir.y, curr_dir.z);
+
+    //rotation on direction change
     glRotated(direction_angle, 0,0,1);
 
-    //fixed transformations for the wheel to be upright
+    //fixed transformations for the wheel to be above z-axis
     glTranslated(0, 0, wheel_rad);
+
+    //axial rotation during translation
+    glRotated(axial_angle, 1,0,0);
+
+    //fixed transformations for the wheel to be upright
     glRotated(90, 0, 1, 0);
+
+    //the wheel rim ======================
     drawCylinderSplice(wheel_rad, wheel_thickness, 24, 20);
+
+    //the first wheel bar
+    glPushMatrix();
+    {
+        glRotated(90, 1,0,0);
+        drawRectangle(wheel_rad, wheel_thickness);
+    }
+    glPopMatrix();
+
+    //the second bar
+    glPushMatrix();
+    {
+        glRotated(90, 0,0,1);
+        glRotated(90, 1,0,0);
+        drawRectangle(wheel_rad, wheel_thickness);
+    }
+    glPopMatrix();
+
 }
 
 
@@ -156,12 +185,14 @@ void go_forward()
 {
     curr_dir = move_along_vect(pos_vector, dir_vector, -STEP_SIZE);
     pos_vector = curr_dir;
+    axial_angle += (STEP_SIZE/(2.0*pi*wheel_rad)) * 360;
 }
 
 void go_backwards()
 {
     curr_dir = move_along_vect(pos_vector, dir_vector, STEP_SIZE);
     pos_vector = curr_dir;
+    axial_angle -= (STEP_SIZE/(2.0*pi*wheel_rad)) * 360;
 }
 
 void keyboardListener(unsigned char key, int x,int y){
@@ -271,7 +302,7 @@ void display(){
 
 	drawAxes();
 	drawGrid();
-    drawWheelRim();
+    drawWheelParts();
 
 	glutSwapBuffers();
 }
@@ -290,13 +321,16 @@ void init(){
 	cameraAngle=0.8;
 
 	//wheel data init =================
-	direction_angle = 0;
+	direction_angle = axial_angle = 0;
 	wheel_rad = 25;
 	wheel_thickness = 6;
+
+
     dir_vector = get_point(0, 1000, 0);
     pos_vector = get_point(0, 0, 0);
     curr_dir = get_point(0, 0, 0);
     STEP_SIZE = 2.0;
+    //=========================================================
 
 	//clear the screen
 	glClearColor(0,0,0,0);
