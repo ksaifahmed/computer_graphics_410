@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1654162580 source:g:\4-1\cse 410\offline1_opengl\graphics_offline_1\main.cpp
+1654231133 source:e:\computer_graphics\opengl_cube2sphere\main.cpp
 	<GLUT/glut.h>
 	<GL/glut.h>
 	<stdlib.h>
@@ -902,7 +902,7 @@
 1526093416 c:\program files\codeblocks\mingw\x86_64-w64-mingw32\include\math.h
 	<crtdefs.h>
 
-1654152205 g:\4-1\cse 410\offline1_opengl\graphics_offline_1\vect.h
+1654174728 e:\computer_graphics\opengl_cube2sphere\vect.h
 	<stdlib.h>
 	<stdio.h>
 	<stdlib.h>

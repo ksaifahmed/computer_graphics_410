@@ -23,8 +23,8 @@ double angle;
 //Global camera data ===============================
 point c_pos, u, l, r;
 //Shape data=================================================
-double square_dim = 18;
-double sp_radius = 18;
+double square_dim = 24;
+double sp_radius = 12;
 
 
 void drawAxes()
