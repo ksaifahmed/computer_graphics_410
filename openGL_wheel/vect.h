@@ -10,6 +10,15 @@ struct point
 };
 
 
+point get_point(double x, double y, double z)
+{
+    point p1;
+    p1.x = x;
+    p1.y = y;
+    p1.z = z;
+    return p1;
+}
+
 point vect_add(point p1, point p2)
 {
     p1.x = p1.x + p2.x;
@@ -62,4 +71,19 @@ void axis_rotation(point *l, point *u, point *r, double degrees)
     double rad = degrees * pi / 180.0;
     *l = vect_add(vect_scale(*l, cos(rad)), vect_scale(*u, sin(rad)));
     *u = cross_product(*r, *l);
+}
+
+point rotate_about_point(point d, point o, double degrees)
+{
+    double rad = degrees * pi / 180.0;
+    d.x -= o.x;
+    d.y -= o.y;
+
+    double temp = d.x*cos(rad) - d.y*sin(rad);
+    d.y = d.x*sin(rad) + d.y*cos(rad);
+    d.x = temp;
+
+    d.x += o.x;
+    d.y += o.y;
+    return d;
 }

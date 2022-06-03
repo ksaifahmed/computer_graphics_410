@@ -15,20 +15,31 @@
 //Global camera data ===============================
 double cameraHeight;
 double cameraAngle;
+
+//wheel data ===============================
+double direction_angle;
+double wheel_rad;
+double wheel_thickness;
+double STEP_SIZE;
+point dir_vector; //where looking at
+point pos_vector; //position of wheel
+point curr_dir; //where to travel now
+
+
 int drawgrid;
 int drawaxes;
-double angle;
 
 
 void drawAxes()
 {
 	if(drawaxes==1)
 	{
-		glColor3f(1.0, 1.0, 1.0);
+		glColor3f(1.0, 0, 0);
 		glBegin(GL_LINES);{
 			glVertex3f( 160,0,0);
 			glVertex3f(-160,0,0);
 
+			glColor3f(0, 1.0, 1.0);
 			glVertex3f(0,-160,0);
 			glVertex3f(0, 160,0);
 
@@ -119,23 +130,57 @@ void drawCylinderSplice(double radius, double height, int slices,int stacks)
 
 void drawWheelRim()
 {
+    glTranslated(curr_dir.x, curr_dir.y, curr_dir.z);
+    glRotated(direction_angle, 0,0,1);
+
+    //fixed transformations for the wheel to be upright
+    glTranslated(0, 0, wheel_rad);
     glRotated(90, 0, 1, 0);
-    drawCylinderSplice(26, 6, 24, 20);
+    drawCylinderSplice(wheel_rad, wheel_thickness, 24, 20);
+}
+
+
+void turn_left()
+{
+    direction_angle += 3;
+    dir_vector = rotate_about_point(dir_vector, pos_vector, 3);
+}
+
+void turn_right()
+{
+    direction_angle -= 3;
+    dir_vector = rotate_about_point(dir_vector, pos_vector, -3);
+}
+
+void go_forward()
+{
+    curr_dir = move_along_vect(pos_vector, dir_vector, -STEP_SIZE);
+    pos_vector = curr_dir;
+}
+
+void go_backwards()
+{
+    curr_dir = move_along_vect(pos_vector, dir_vector, STEP_SIZE);
+    pos_vector = curr_dir;
 }
 
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
 		case 'w':
+		    go_forward();
 			break;
 
 		case 's':
+		    go_backwards();
 			break;
 
 		case 'a':
+		    turn_left();
 			break;
 
 		case 'd':
+		    turn_right();
 			break;
 
 		default:
@@ -233,7 +278,6 @@ void display(){
 
 
 void animate(){
-	angle+=0.05;
 	//codes for any changes in Models, Camera
 	glutPostRedisplay();
 }
@@ -244,8 +288,15 @@ void init(){
 	drawaxes=1;
 	cameraHeight=100.0;
 	cameraAngle=0.8;
-	angle=0;
 
+	//wheel data init =================
+	direction_angle = 0;
+	wheel_rad = 25;
+	wheel_thickness = 6;
+    dir_vector = get_point(0, 1000, 0);
+    pos_vector = get_point(0, 0, 0);
+    curr_dir = get_point(0, 0, 0);
+    STEP_SIZE = 2.0;
 
 	//clear the screen
 	glClearColor(0,0,0,0);
