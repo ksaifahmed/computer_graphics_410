@@ -152,9 +152,9 @@ void Triangle::set_coord(double **coord)
 
 void Triangle::print_triangle()
 {
-    for(int i=0; i<4; i++) {
+    for(int i=0; i<3; i++) {
         for(int j=0; j<3; j++)
-            cout << coord_arr[i][j] << " ";
+            cout << coord_arr[j][i] << " ";
         cout << endl;
     }
     cout << endl;
@@ -186,12 +186,14 @@ double **get_scale_mat(double sx, double sy, double sz)
     //triangle->set_coord(mat_mul(trans_mat, triangle->get_coord(), 4, 3, 4));
 }
 
-double **get_rotate_mat(Triangle *triangle, double angle, Point axis)
+double **get_rotate_mat(double angle, double x, double y, double z)
 {
+    Point axis = get_point(x, y, z);
     Point i = get_point(1, 0, 0);
     Point j = get_point(0, 1, 0);
     Point k = get_point(0, 0, 1);
 
+    angle = (acos(0)/90.0) * angle;
     double c = cos(angle), s = sin(angle);
     Point col1 = vect_add(
         vect_scale(i, c),
@@ -215,15 +217,135 @@ double **get_rotate_mat(Triangle *triangle, double angle, Point axis)
 }
 
 
+
+//==================TRANSFORM STACK UTILS ===========================
+class TStack
+{
+    int size;
+    bool push_init;
+    vector<double **> trans_stack;
+    public:
+        TStack();
+        void pop();
+        double **top();
+        void push(double **);
+        void enable_push(){ push_init = true; }
+
+};
+
+TStack::TStack()
+{
+    size = 1; push_init = false;
+    double **id_mat = getMat(4, 4);
+    for(int i=0; i<4; i++) id_mat[i][i] = 1.0;
+    trans_stack.push_back(id_mat);
+}
+
+void TStack::push(double **trans_mat)
+{
+    if(size > 0 && push_init){
+        trans_stack.push_back(trans_mat);
+        size++;
+    }
+}
+
+void TStack::pop()
+{
+    if(size > 1){
+        trans_stack.pop_back();
+        size--;
+    }
+    if(size == 1) push_init = false;
+}
+
+double **TStack::top()
+{
+    return trans_stack.back();
+}
+
+
 int main()
 {
-    Point p1 = get_point(1, 2, 3);
-    Point p2 = get_point(5, 6, 7);
-    Point p3 = get_point(8, 9, 3);
+    std::cout << std::fixed;
+    std::cout << std::setprecision(7);
 
-    Triangle triangle(p1, p2, p3);
-    triangle.print_triangle();
+    string comm;
+    TStack tstack;
+    vector<TStack> state;
+    freopen("scene.txt", "r", stdin);
 
+    while(true)
+    {
+        cin >> comm;
+        if(!comm.compare("triangle"))
+        {
+            Point p1, p2, p3;
+            cin >> p1.x >> p1.y >> p1.z;
+            cin >> p2.x >> p2.y >> p2.z;
+            cin >> p3.x >> p3.y >> p3.z;
+            Triangle triangle(p1, p2, p3);
 
+            double **trans_mat = tstack.top();
+            triangle.set_coord(
+                mat_mul(trans_mat, triangle.get_coord(), 4, 3, 4)
+            );
+            triangle.print_triangle();
+        }
+
+        else if(!comm.compare("translate"))
+        {
+            tstack.enable_push();
+            double x, y, z;
+            cin >> x >> y >> z;
+            double **trans_mat = get_translate_mat(x, y, z);
+            tstack.push(
+                mat_mul(tstack.top(), trans_mat, 4, 4, 4)
+            );
+        }
+
+        else if(!comm.compare("scale"))
+        {
+            tstack.enable_push();
+            double x, y, z;
+            cin >> x >> y >> z;
+            double **trans_mat = get_scale_mat(x, y, z);
+            tstack.push(
+                mat_mul(tstack.top(), trans_mat, 4, 4, 4)
+            );
+        }
+
+        else if(!comm.compare("rotate"))
+        {
+            tstack.enable_push();
+            double deg, x, y, z;
+            cin >> deg >> x >> y >> z;
+            double **trans_mat = get_rotate_mat(deg, x, y, z);
+            tstack.push(
+                mat_mul(tstack.top(), trans_mat, 4, 4, 4)
+            );
+        }
+
+        else if(!comm.compare("push"))
+        {
+            state.push_back(tstack);
+        }
+
+        else if(!comm.compare("pop"))
+        {
+            if(!state.empty())
+            {
+                tstack = state.back();
+                state.pop_back();
+            }
+        }
+
+        else if(!comm.compare("end"))
+        {
+            break;
+        }
+
+    }
+
+    fclose(stdin);
     return 0;
 }
