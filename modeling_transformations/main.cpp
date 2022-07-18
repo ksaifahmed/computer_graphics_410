@@ -125,7 +125,8 @@ class Triangle
         Triangle(Point, Point, Point);
         void free_mem();
         void print_triangle();
-        void set_coord(double **);
+        void print_triangle(ofstream *);
+        void set_coord(double **, bool);
         double **get_coord() { return coord_arr; };
 };
 
@@ -153,10 +154,21 @@ Triangle::Triangle(Point p1, Point p2, Point p3)
         coord_arr[3][i] = 1.0;
 }
 
-void Triangle::set_coord(double **coord)
+void Triangle::set_coord(double **coord, bool normalize=false)
 {
     free_mem();
     coord_arr = coord;
+
+    if(normalize){
+        for(int i=0; i<3; i++) {
+            if(coord_arr[3][i]) {
+                coord_arr[0][i] /= coord_arr[3][i];
+                coord_arr[1][i] /= coord_arr[3][i];
+                coord_arr[2][i] /= coord_arr[3][i];
+                coord_arr[3][i] /= coord_arr[3][i];
+            }
+        }
+    }
 }
 
 void Triangle::print_triangle()
@@ -167,6 +179,16 @@ void Triangle::print_triangle()
         cout << endl;
     }
     cout << endl;
+}
+
+void Triangle::print_triangle(ofstream *ofs)
+{
+    for(int i=0; i<3; i++) {
+        for(int j=0; j<3; j++)
+            *ofs << coord_arr[j][i] << " ";
+        *ofs << endl;
+    }
+    *ofs << endl;
 }
 
 
@@ -288,20 +310,23 @@ double **get_view_rot(Point eye, Point look, Point up)
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++)
             R[j][i] = temp[i][j];
+
+    R[3][3] = 1;
     return R;
 }
 
 double **get_view_trans(Point eye)
 {
     double **T = get_translate_mat(-eye.x, -eye.y, -eye.z);
+    T[3][3] = 1;
     return T;
 }
 
 double **get_projection_mat(double fovY, double aspectRatio, double near, double far)
 {
     double fovX = fovY * aspectRatio;
-    double t = near * tan(fovY/2);
-    double r = near * tan(fovX/2);
+    double t = near * tan(fovY/2 * (acos(0)/90.0));
+    double r = near * tan(fovX/2* (acos(0)/90.0));
 
     double **ProjectionMat = getMat(4, 4);
     ProjectionMat[0][0] = near/r;
@@ -337,6 +362,12 @@ int main()
     double **ViewMat = mat_mul(R, T, 4, 4, 4);
     double **ProjectionMat = get_projection_mat(fovY, aspectRatio, near, far);
 
+    ofstream ofs[3];
+    ofs[0].open("stage1.txt");
+    ofs[1].open("stage2.txt");
+    ofs[2].open("stage3.txt");
+    for(int i=0; i<3; i++) ofs[i] << setprecision(7) << fixed;
+
     while(true)
     {
         cin >> comm;
@@ -348,11 +379,27 @@ int main()
             cin >> p3.x >> p3.y >> p3.z;
             Triangle triangle(p1, p2, p3);
 
+            //transform
             double **trans_mat = tstack.top();
             triangle.set_coord(
-                mat_mul(trans_mat, triangle.get_coord(), 4, 3, 4)
+                mat_mul(trans_mat, triangle.get_coord(), 4, 3, 4),
+                true
             );
-            triangle.print_triangle();
+            triangle.print_triangle(&ofs[0]);
+
+            //view
+            triangle.set_coord(
+                mat_mul(ViewMat, triangle.get_coord(), 4, 3, 4),
+                true
+            );
+            triangle.print_triangle(&ofs[1]);
+
+            //projection
+            triangle.set_coord(
+                mat_mul(ProjectionMat, triangle.get_coord(), 4, 3, 4),
+                true
+            );
+            triangle.print_triangle(&ofs[2]);
         }
 
         else if(!comm.compare("translate"))
@@ -409,6 +456,7 @@ int main()
 
     }
 
+    for(int i=0; i<3; i++) ofs[i].close();
     fclose(stdin);
     return 0;
 }
