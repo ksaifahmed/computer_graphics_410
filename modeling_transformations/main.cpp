@@ -49,7 +49,6 @@ double **point_to_mat(Point p1, Point p2, Point p3, int n, int m)
     return ans;
 }
 
-
 //================== POINT STRUCT UTILS ===========================
 Point get_point(double x, double y, double z)
 {
@@ -103,6 +102,16 @@ Point cross_product(Point a, Point b)
     p.y = a.z*b.x - a.x*b.z;
     p.z = a.x*b.y - a.y*b.x;
     return p;
+}
+
+
+Point normalize(Point a)
+{
+    double div = sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+    a.x /= div;
+    a.y /= div;
+    a.z /= div;
+    return a;
 }
 
 
@@ -183,12 +192,11 @@ double **get_scale_mat(double sx, double sy, double sz)
     trans_mat[3][3] = 1.0;
 
     return trans_mat;
-    //triangle->set_coord(mat_mul(trans_mat, triangle->get_coord(), 4, 3, 4));
 }
 
 double **get_rotate_mat(double angle, double x, double y, double z)
 {
-    Point axis = get_point(x, y, z);
+    Point axis = normalize(get_point(x, y, z));
     Point i = get_point(1, 0, 0);
     Point j = get_point(0, 1, 0);
     Point k = get_point(0, 0, 1);
@@ -264,6 +272,48 @@ double **TStack::top()
 }
 
 
+//==================VIEW AND PROJECTION UTILS===========================
+double **get_view_rot(Point eye, Point look, Point up)
+{
+    Point l, u, r;
+    l = vect_add(look, vect_scale(eye, -1));
+    l = normalize(l);
+    r = cross_product(l, up);
+    r = normalize(r);
+    u = cross_product(r, l);
+
+    l = vect_scale(l, -1);
+    double **temp = point_to_mat(r, u, l, 4, 4);
+    double **R = getMat(4, 4);
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            R[j][i] = temp[i][j];
+    return R;
+}
+
+double **get_view_trans(Point eye)
+{
+    double **T = get_translate_mat(-eye.x, -eye.y, -eye.z);
+    return T;
+}
+
+double **get_projection_mat(double fovY, double aspectRatio, double near, double far)
+{
+    double fovX = fovY * aspectRatio;
+    double t = near * tan(fovY/2);
+    double r = near * tan(fovX/2);
+
+    double **ProjectionMat = getMat(4, 4);
+    ProjectionMat[0][0] = near/r;
+    ProjectionMat[1][1] = near/t;
+    ProjectionMat[2][2] = -(far+near)/(far-near);
+    ProjectionMat[2][3] = -(2*far*near)/(far-near);
+    ProjectionMat[3][2] = -1;
+
+    return ProjectionMat;
+}
+
+
 int main()
 {
     std::cout << std::fixed;
@@ -273,6 +323,19 @@ int main()
     TStack tstack;
     vector<TStack> state;
     freopen("scene.txt", "r", stdin);
+
+    Point look, eye, up;
+    double fovY, aspectRatio, near, far;
+
+    cin >> eye.x >> eye.y >> eye.z;
+    cin >> look.x >> look.y >> look.z;
+    cin >> up.x >> up.y >> up.z;
+    cin >> fovY >> aspectRatio >> near >> far;
+
+    double **R = get_view_rot(eye, look, up);
+    double **T = get_view_trans(eye);
+    double **ViewMat = mat_mul(R, T, 4, 4, 4);
+    double **ProjectionMat = get_projection_mat(fovY, aspectRatio, near, far);
 
     while(true)
     {
