@@ -1,9 +1,16 @@
 #include <bits/stdc++.h>
+#include "bitmap_image.hpp"
 using namespace std;
 
 struct Point
 {
 	double x,y,z;
+};
+
+
+struct Color
+{
+    int r, g, b;
 };
 
 
@@ -119,11 +126,13 @@ Point normalize(Point a)
 class Triangle
 {
     double **coord_arr;
+    Color color;
     public:
         Triangle();
         ~Triangle();
         Triangle(Point, Point, Point);
         void free_mem();
+        void set_color();
         void print_triangle();
         void print_triangle(ofstream *);
         void set_coord(double **, bool);
@@ -189,6 +198,13 @@ void Triangle::print_triangle(ofstream *ofs)
         *ofs << endl;
     }
     *ofs << endl;
+}
+
+void Triangle::set_color()
+{
+    color.r = rand() % 256;
+    color.b = rand() % 256;
+    color.g = rand() % 256;
 }
 
 
@@ -339,10 +355,72 @@ double **get_projection_mat(double fovY, double aspectRatio, double near, double
 }
 
 
+//==================Hidden Surface Removal===========================
+void triangle_to_image()
+{
+    int screenWidth, screenHeight;
+    double minX, minY, maxX, maxY;
+    double zMax, zMin;
+
+	ifstream stage3, config;
+	config.open("config.txt");
+
+	//read configuration vars
+    config >> screenWidth >> screenHeight >> minX >> minY;
+    config >> zMin >> zMax;
+    maxX = -minX; maxY = -minY;
+
+	config.close();
+
+    Point p1, p2, p3;
+	stage3.open("stage3.txt");
+
+	//initialize z-buffer
+    double zBuffer[screenWidth][screenHeight];
+    for(int i=0; i<screenWidth; i++)
+        for(int j=0; j<screenHeight; j++)
+            zBuffer[i][j] = zMax;
+
+    //initialize image object
+    bitmap_image image(screenWidth, screenHeight);
+    for(int i=0; i<screenWidth; i++)
+        for(int j=0; j<screenHeight; j++)
+            image.set_pixel(i, j, 0, 0, 0);
+
+    //necessary vars for scanning
+    double dx = (maxX - minX) / screenWidth;
+    double dy = (maxY - minY) / screenHeight;
+
+    double topY = maxY - dy / 2;
+    double bottomY = minY + dy / 2;
+
+    double rightX = maxX - dx / 2;
+    double leftX = minX + dx / 2;
+
+
+	//begin procedure for each triangle
+    while(stage3 >> p1.x) {
+        stage3 >> p1.y >> p1.z;
+        stage3 >> p2.x >> p2.y >> p2.z;
+        stage3 >> p3.x >> p3.y >> p3.z;
+
+        Triangle t(p1, p2, p3);
+        t.print_triangle();
+        t.set_color();
+
+        //Z-BUFFER ALGO HERE
+    }
+
+    image.save_image("out.bmp");
+    stage3.close();
+}
+
+
 int main()
 {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(7);
+    srand(time(NULL));
+    cout << fixed;
+    cout << setprecision(7);
 
     string comm;
     TStack tstack;
@@ -458,5 +536,33 @@ int main()
 
     for(int i=0; i<3; i++) ofs[i].close();
     fclose(stdin);
+
+
+
+
+
+    //triangle to bitmap image
+    //with hidden surface removal
+    triangle_to_image();
+
+
+
+
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
