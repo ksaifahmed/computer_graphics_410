@@ -1,10 +1,13 @@
 #include <bits/stdc++.h>
 #include "bitmap_image.hpp"
+#define INF 1e8
+#define ZERO 1e-8
 using namespace std;
+
 
 struct Point
 {
-	double x,y,z;
+    double x,y,z;
 };
 
 
@@ -121,22 +124,40 @@ Point normalize(Point a)
     return a;
 }
 
+Point get_intersection(Point L1, Point L2, double y)
+{
+    Point p = get_point(INF, INF, INF);
+    if(fabs(L1.y - L2.y) < ZERO) return p;
+    if(L1.y < y && L2.y < y) return p;
+    if(L1.y > y && L2.y > y) return p;
+
+    p.y = y;
+    p.x = L1.x + ((L1.x - L2.x)/(L1.y - L2.y)) * (y - L1.y);
+    p.z = L1.z + ((L1.z - L2.z)/(L1.y - L2.y)) * (y - L1.y);
+
+    return p;
+}
 
 //================== TRIANGLE CLASS ===========================
 class Triangle
 {
     double **coord_arr;
+public:
     Color color;
-    public:
-        Triangle();
-        ~Triangle();
-        Triangle(Point, Point, Point);
-        void free_mem();
-        void set_color();
-        void print_triangle();
-        void print_triangle(ofstream *);
-        void set_coord(double **, bool);
-        double **get_coord() { return coord_arr; };
+    Triangle();
+    ~Triangle();
+    Triangle(Point, Point, Point);
+    void free_mem();
+    void set_color();
+    double get_maxY();
+    double get_minY();
+    void print_triangle();
+    void print_triangle(ofstream *);
+    void set_coord(double **, bool);
+    double **get_coord()
+    {
+        return coord_arr;
+    };
 };
 
 void Triangle::free_mem()
@@ -168,9 +189,12 @@ void Triangle::set_coord(double **coord, bool normalize=false)
     free_mem();
     coord_arr = coord;
 
-    if(normalize){
-        for(int i=0; i<3; i++) {
-            if(coord_arr[3][i]) {
+    if(normalize)
+    {
+        for(int i=0; i<3; i++)
+        {
+            if(coord_arr[3][i])
+            {
                 coord_arr[0][i] /= coord_arr[3][i];
                 coord_arr[1][i] /= coord_arr[3][i];
                 coord_arr[2][i] /= coord_arr[3][i];
@@ -182,7 +206,8 @@ void Triangle::set_coord(double **coord, bool normalize=false)
 
 void Triangle::print_triangle()
 {
-    for(int i=0; i<3; i++) {
+    for(int i=0; i<3; i++)
+    {
         for(int j=0; j<3; j++)
             cout << coord_arr[j][i] << " ";
         cout << endl;
@@ -192,7 +217,8 @@ void Triangle::print_triangle()
 
 void Triangle::print_triangle(ofstream *ofs)
 {
-    for(int i=0; i<3; i++) {
+    for(int i=0; i<3; i++)
+    {
         for(int j=0; j<3; j++)
             *ofs << coord_arr[j][i] << " ";
         *ofs << endl;
@@ -207,6 +233,15 @@ void Triangle::set_color()
     color.g = rand() % 256;
 }
 
+double Triangle::get_maxY()
+{
+    return max({coord_arr[1][0], coord_arr[1][1], coord_arr[1][2]});
+}
+
+double Triangle::get_minY()
+{
+    return min({coord_arr[1][0], coord_arr[1][1], coord_arr[1][2]});
+}
 
 //================== LINEAR TRANSFORM UTILS ===========================
 double **get_translate_mat(double tx, double ty, double tz)
@@ -242,20 +277,20 @@ double **get_rotate_mat(double angle, double x, double y, double z)
     angle = (acos(0)/90.0) * angle;
     double c = cos(angle), s = sin(angle);
     Point col1 = vect_add(
-        vect_scale(i, c),
-        vect_scale(axis, (1-c)*dot_product(axis, i)),
-        vect_scale(cross_product(axis, i), s)
-    );
+                     vect_scale(i, c),
+                     vect_scale(axis, (1-c)*dot_product(axis, i)),
+                     vect_scale(cross_product(axis, i), s)
+                 );
     Point col2 = vect_add(
-        vect_scale(j, c),
-        vect_scale(axis, (1-c)*dot_product(axis, j)),
-        vect_scale(cross_product(axis, j), s)
-    );
+                     vect_scale(j, c),
+                     vect_scale(axis, (1-c)*dot_product(axis, j)),
+                     vect_scale(cross_product(axis, j), s)
+                 );
     Point col3 = vect_add(
-        vect_scale(k, c),
-        vect_scale(axis, (1-c)*dot_product(axis, k)),
-        vect_scale(cross_product(axis, k), s)
-    );
+                     vect_scale(k, c),
+                     vect_scale(axis, (1-c)*dot_product(axis, k)),
+                     vect_scale(cross_product(axis, k), s)
+                 );
 
     double **trans_mat = point_to_mat(col1, col2, col3, 4, 4);
     trans_mat[3][3] = 1.0;
@@ -270,18 +305,22 @@ class TStack
     int size;
     bool push_init;
     vector<double **> trans_stack;
-    public:
-        TStack();
-        void pop();
-        double **top();
-        void push(double **);
-        void enable_push(){ push_init = true; }
+public:
+    TStack();
+    void pop();
+    double **top();
+    void push(double **);
+    void enable_push()
+    {
+        push_init = true;
+    }
 
 };
 
 TStack::TStack()
 {
-    size = 1; push_init = false;
+    size = 1;
+    push_init = false;
     double **id_mat = getMat(4, 4);
     for(int i=0; i<4; i++) id_mat[i][i] = 1.0;
     trans_stack.push_back(id_mat);
@@ -289,7 +328,8 @@ TStack::TStack()
 
 void TStack::push(double **trans_mat)
 {
-    if(size > 0 && push_init){
+    if(size > 0 && push_init)
+    {
         trans_stack.push_back(trans_mat);
         size++;
     }
@@ -297,7 +337,8 @@ void TStack::push(double **trans_mat)
 
 void TStack::pop()
 {
-    if(size > 1){
+    if(size > 1)
+    {
         trans_stack.pop_back();
         size--;
     }
@@ -362,20 +403,21 @@ void triangle_to_image()
     double minX, minY, maxX, maxY;
     double zMax, zMin;
 
-	ifstream stage3, config;
-	config.open("config.txt");
+    ifstream stage3, config;
+    config.open("config.txt");
 
-	//read configuration vars
+    //read configuration vars
     config >> screenWidth >> screenHeight >> minX >> minY;
     config >> zMin >> zMax;
-    maxX = -minX; maxY = -minY;
+    maxX = -minX;
+    maxY = -minY;
 
-	config.close();
+    config.close();
 
     Point p1, p2, p3;
-	stage3.open("stage3.txt");
+    stage3.open("stage3.txt");
 
-	//initialize z-buffer
+    //initialize z-buffer
     double zBuffer[screenWidth][screenHeight];
     for(int i=0; i<screenWidth; i++)
         for(int j=0; j<screenHeight; j++)
@@ -397,18 +439,86 @@ void triangle_to_image()
     double rightX = maxX - dx / 2;
     double leftX = minX + dx / 2;
 
+    double slope, zp;
+    double largestY, smallestY, ys;
+    int topPixel, bottomPixel, leftLim, rightLim;
 
-	//begin procedure for each triangle
-    while(stage3 >> p1.x) {
+    //begin procedure for each triangle
+    while(stage3 >> p1.x)
+    {
         stage3 >> p1.y >> p1.z;
         stage3 >> p2.x >> p2.y >> p2.z;
         stage3 >> p3.x >> p3.y >> p3.z;
 
         Triangle t(p1, p2, p3);
-        t.print_triangle();
+        //t.print_triangle();
         t.set_color();
 
-        //Z-BUFFER ALGO HERE
+        //top and bottom scan-line pixels
+        largestY = min(topY, t.get_maxY());
+        smallestY = max(bottomY, t.get_minY());
+        topPixel = floor( (topY-largestY) / dy);
+        bottomPixel = floor( (topY-smallestY) / dy);
+
+        ys = topY- topPixel*dy;
+        for(int i=topPixel; i<=bottomPixel; i++)
+        {
+            //get intersections with sides of triangle
+            Point a = get_intersection(p1, p2, ys);
+            Point b = get_intersection(p1, p3, ys);
+            Point c = get_intersection(p2, p3, ys);
+            ys -= dy;
+            if(a.x==INF && b.x==INF && c.x==INF) continue;
+
+            //determine left and right intersections
+            Point leftInter, rightInter;
+            if(a.x == INF){
+                leftInter = b.x < c.x ? b : c;
+                rightInter = b.x > c.x ? b : c;
+            }
+            else if(b.x == INF){
+                leftInter = a.x < c.x ? a : c;
+                rightInter = a.x > c.x ? a : c;
+            }
+            else{
+                leftInter = b.x < a.x ? b : a;
+                rightInter = b.x > a.x ? b : a;
+            }
+
+            //depth calculation of leftPoint
+            zp = leftInter.z;
+            slope = (rightInter.z-leftInter.z)/(rightInter.x-leftInter.x);
+
+            //box range check
+            if (leftInter.x < leftX) {
+               zp += (leftX - leftInter.x) * slope;
+               leftInter.x = leftX;
+            }
+            if (rightInter.x > rightX)
+                rightInter.x = rightX;
+
+
+            //scan left to right
+            leftLim = floor((leftInter.x - leftX) / dx);
+            rightLim = floor((rightInter.x - leftX) / dx);
+            for (int j=leftLim; j<=rightLim; j++)
+            {
+                if (zp >= zMin && zBuffer[i][j] > zp)
+                {
+                    zBuffer[i][j] = zp;
+                    image.set_pixel(j, i, t.color.r, t.color.g, t.color.b);
+                }
+                zp += (dx * slope);
+            }
+
+//            cout << "Points: " << ys << endl;
+//            cout << leftInter.x << " " << leftInter.y << " " << leftInter.z << endl;
+//            cout << rightInter.x << " " << rightInter.y << " " << rightInter.z << endl;
+//            cout << endl;
+        }
+
+
+
     }
 
     image.save_image("out.bmp");
