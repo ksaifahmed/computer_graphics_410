@@ -509,20 +509,29 @@ void triangle_to_image()
                     image.set_pixel(j, i, t.color.r, t.color.g, t.color.b);
                 }
                 zp += (dx * slope);
-            }
+            } //end of inner loop
 
-//            cout << "Points: " << ys << endl;
-//            cout << leftInter.x << " " << leftInter.y << " " << leftInter.z << endl;
-//            cout << rightInter.x << " " << rightInter.y << " " << rightInter.z << endl;
-//            cout << endl;
-        }
+        } //end of for each: triangle
 
+    } //end of z-buffer algorithm
 
-
-    }
-
+    //save bitmap
     image.save_image("out.bmp");
     stage3.close();
+
+    //print z-buffer values
+    ofstream zout;
+    zout.open("z_buffer.txt");
+    zout << setprecision(6) << fixed;
+    for(int i=0; i<screenWidth; i++) {
+        for(int j=0; j<screenHeight; j++)
+        {
+            if (zBuffer[i][j] < zMax)
+                zout << zBuffer[i][j] << "\t";
+        }
+        zout << endl;
+    }
+    zout.close();
 }
 
 
