@@ -11,9 +11,10 @@ class Object{
         double color[3];
         double coEfficients[4];
         int shine;
+        int obj_type;
 
-        Object(){};
-        virtual void draw(){}
+        Object(){ obj_type = 0; }
+        virtual void draw() = 0;
         void setShine(int);
         void print_obj();
         void read_obj(ifstream &);
@@ -59,10 +60,57 @@ void Object::print_obj()
 class Sphere : public Object{
     public:
         Vector3D centre;
-        Sphere(){};
-        void draw();
+
+        Sphere(){ obj_type = 1; }
         void print();
         void read_sphere(ifstream &);
+
+        virtual void draw()
+        {
+            glPushMatrix(); //=========================================
+            glTranslated(centre.x, centre.y, centre.z);
+            Vector3D points[100][100];
+            int i,j;
+            int slices = 24, stacks = 30;
+            double h,r;
+            glColor3f(color[0], color[1], color[2]);
+
+            //generate points
+            for(i=0;i<=stacks;i++)
+            {
+                h=length*sin(((double)i/(double)stacks)*(pi/2));
+                r=length*cos(((double)i/(double)stacks)*(pi/2));
+                for(j=0;j<=slices;j++)
+                {
+                    points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
+                    points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
+                    points[i][j].z=h;
+                }
+            }
+            //draw quads using generated points
+            for(i=0;i<stacks;i++)
+            {
+                //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+                for(j=0;j<slices;j++)
+                {
+                    glBegin(GL_QUADS);{
+                        //upper hemisphere
+                        glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
+                        glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+                        glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+                        //lower hemisphere
+                        glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
+                        glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
+                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
+                        glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
+                    }glEnd();
+                }
+            }
+
+            glPopMatrix(); //=====================================================
+        }
+
 };
 
 void Sphere::read_sphere(ifstream &ifs)
@@ -75,79 +123,34 @@ void Sphere::print()
 {
     cout << "\nSphere=================\n";
     cout << "centre: " << centre;
-    cout << "rad: " << length;
+    cout << "rad: " << length << endl;
     print_obj();
 }
 
-void Sphere::draw()
-{
-    glPushMatrix(); //=========================================
-    glTranslated(centre.x, centre.y, centre.z);
-    Vector3D points[100][100];
-    int i,j;
-    int slices = 24, stacks = 30;
-    double h,r;
-    glColor3f(color[0], color[1], color[2]);
-
-    //generate points
-    for(i=0;i<=stacks;i++)
-    {
-        h=length*sin(((double)i/(double)stacks)*(pi/2));
-        r=length*cos(((double)i/(double)stacks)*(pi/2));
-        for(j=0;j<=slices;j++)
-        {
-            points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
-            points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
-            points[i][j].z=h;
-        }
-    }
-    //draw quads using generated points
-    for(i=0;i<stacks;i++)
-    {
-        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
-        for(j=0;j<slices;j++)
-        {
-            glBegin(GL_QUADS);{
-                //upper hemisphere
-                glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
-                glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
-                glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
-                glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
-                //lower hemisphere
-                glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
-                glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
-                glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
-                glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
-            }glEnd();
-        }
-    }
-
-    glPopMatrix(); //=====================================================
-}
-
-
 class Triangle : public Object{
     public:
+        int type = 2;
         Vector3D points[3];
-        Triangle(){};
-        void draw();
+
+        Triangle(){ obj_type = 2; };
         void print();
         void read_triangle(ifstream &);
+        virtual void draw()
+        {
+            glColor3f(color[0], color[1], color[2]);
+            //generate points
+            glBegin(GL_TRIANGLES);
+            {
+                glVertex3f(points[0].x, points[0].y, points[0].z);
+                glVertex3f(points[1].x, points[1].y, points[1].z);
+                glVertex3f(points[2].x, points[2].y, points[2].z);
+            }
+            glEnd();
+
+        }
 };
 
-void Triangle::draw()
-{
-    glColor3f(color[0], color[1], color[2]);
-    //generate points
-    glBegin(GL_TRIANGLES);
-    {
-        glVertex3f(20,0,0);
-        glVertex3f(0,20,0);
-        glVertex3f(0,0,0);
-    }
-    glEnd();
 
-}
 
 void Triangle::read_triangle(ifstream &ifs)
 {
@@ -170,8 +173,8 @@ class General : public Object{
         Vector3D centre;
         double a, b, c, d, e;
         double f, g, h, i, j;
-        General(){};
-        void draw(){};
+        General(){ obj_type = 3; }
+        virtual void draw(){ return; }
         void print();
         void read_general(ifstream &);
 };
@@ -205,8 +208,16 @@ class PointLight{
         double color[3];
 
         PointLight(){}
+        void print();
         void read_pointlight(ifstream &);
 };
+
+void PointLight::print()
+{
+    cout << "\nPoint Light==========\n";
+    cout << light_pos;
+    cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
+}
 
 void PointLight::read_pointlight(ifstream &ifs)
 {
@@ -215,18 +226,29 @@ void PointLight::read_pointlight(ifstream &ifs)
 }
 
 class SpotLight{
-    PointLight point_light;
-    Vector3D light_direction;
-    double cutoff_angle;
+    public:
+        PointLight point_light;
+        Vector3D light_direction;
+        double cutoff_angle;
 
-    SpotLight(){}
-    void read_spotlight(ifstream &);
+        SpotLight(){}
+        void print();
+        void read_spotlight(ifstream &);
 };
 
+
+void SpotLight::print()
+{
+    cout << "\nSpot Light==========\n";
+    cout << point_light.light_pos;
+    cout << "colors: " << point_light.color[0] << "," << point_light.color[1] << "," << point_light.color[2] << endl;
+    cout << light_direction;
+    cout << "cutoff angle: " << cutoff_angle << endl;
+}
 void SpotLight::read_spotlight(ifstream &ifs)
 {
     point_light.read_pointlight(ifs);
-
+    ifs >> light_direction >> cutoff_angle;
 }
 
 

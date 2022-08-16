@@ -13,9 +13,6 @@
 
 #define pi (2*acos(0.0))
 
-
-double cameraHeight;
-double cameraAngle;
 int drawgrid;
 int drawaxes;
 
@@ -25,9 +22,9 @@ Vector3D c_pos, u, l, r;
 
 //Global data
 int recursion_level, screenWidth, screenHeight;
-vector <Object> objects;
-vector <PointLight> pointlights;
-vector <SpotLight> spotlights;
+vector <Object *> objects;
+vector <PointLight *> pointlights;
+vector <SpotLight *> spotlights;
 
 
 void drawAxes()
@@ -198,44 +195,19 @@ void display(){
 	//initialize the matrix
 	glLoadIdentity();
 
-	//now give three info
-	//1. where is the camera (viewer)?
-	//2. where is the camera looking?
-	//3. Which direction is the camera's UP direction?
-
 	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
 	//gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
     gluLookAt(c_pos.x,c_pos.y,c_pos.z,    c_pos.x+l.x,c_pos.y+l.y,c_pos.z+l.z,   u.x,u.y,u.z);
 	gluLookAt(0,0,200,	0,0,0,	0,1,0);
 
-
-	//again select MODEL-VIEW
 	glMatrixMode(GL_MODELVIEW);
-
-
-	/****************************
-	/ Add your objects from here
-	****************************/
-	//add objects
 
 	drawAxes();
 	drawGrid();
 
-    //glColor3f(1,0,0);
-    //drawSquare(10);
+    for(int i=0; i<objects.size(); i++)
+        objects.at(i)->draw();
 
-    //drawSS();
-
-    //drawCircle(30,24);
-
-    //drawCone(20,50,24);
-
-	//drawSphere(30,24,20);
-
-
-
-
-	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
 
@@ -249,8 +221,6 @@ void init(){
 	//codes for initialization
 	drawgrid=0;
 	drawaxes=1;
-	cameraHeight=150.0;
-	cameraAngle=1.0;
 
 	//camera vectors init=========================
     u.x = 0; u.y = 0; u.z = 1;
@@ -262,9 +232,6 @@ void init(){
 	//clear the screen
 	glClearColor(0,0,0,0);
 
-	/************************
-	/ set-up projection here
-	************************/
 	//load the PROJECTION matrix
 	glMatrixMode(GL_PROJECTION);
 
@@ -273,10 +240,6 @@ void init(){
 
 	//give PERSPECTIVE parameters
 	gluPerspective(80,	1,	1,	1000.0);
-	//field of view in the Y (vertically)
-	//aspect ratio that determines the field of view in the X direction (horizontally)
-	//near distance
-	//far distance
 }
 
 
@@ -285,40 +248,84 @@ void loadData(){
     ifstream ifs("E:\\CSE 410\\ray_tracing\\scene.txt");
     if(ifs.is_open()){
         ifs >> recursion_level >> screenHeight;
+        screenWidth = screenHeight;
         int n; string type;
         ifs >> n;
 
+        //reading objects
         for(int i=0; i<n; i++){
             ifs >> type;
             if(!type.compare("sphere")) {
-                Sphere sp;
-                sp.read_sphere(ifs);
-                sp.print();
+                Sphere *sp = new Sphere();
+                sp->read_sphere(ifs);
+                sp->print();
                 objects.push_back(sp);
             }
             else if(!type.compare("triangle")) {
-                Triangle sp;
-                sp.read_triangle(ifs);
-                sp.print();
+                Triangle *sp = new Triangle();
+                sp->read_triangle(ifs);
+                sp->print();
                 objects.push_back(sp);
             }
             else if(!type.compare("general")) {
-                General sp;
-                sp.read_general(ifs);
-                sp.print();
+                General *sp = new General();
+                sp->read_general(ifs);
+                sp->print();
                 objects.push_back(sp);
             }
         }
-        screenWidth = screenHeight;
+
+        ifs >> n;
+        //reading point lights
+        for(int i=0; i<n; i++){
+            PointLight *p = new PointLight();
+            p->read_pointlight(ifs);
+            p->print();
+            pointlights.push_back(p);
+        }
+
+        ifs >> n;
+        //reading spot lights
+        for(int i=0; i<n; i++){
+            SpotLight *p = new SpotLight();
+            p->read_spotlight(ifs);
+            p->print();
+            spotlights.push_back(p);
+        }
+
     } else {
         cout << "file not found!" << endl;
         exit(0);
     }
-
-
 }
+
+// for dealloc a vector of object pointers
+template<typename Iterator>
+void deleter(Iterator start, Iterator last)
+{
+   while ( start != last ){
+       delete *start;
+       start++;
+   }
+}
+
+//dealloc the vectors
+void clear_vectors()
+{
+    deleter(objects.begin(), objects.end());
+    objects.clear();
+
+    deleter(pointlights.begin(), pointlights.end());
+    pointlights.clear();
+
+    deleter(spotlights.begin(), spotlights.end());
+    spotlights.clear();
+}
+
 int main(int argc, char **argv){
+    //input from scene.txt
     loadData();
+
 	glutInit(&argc,argv);
 	glutInitWindowSize(500, 500);
 	glutInitWindowPosition(0, 0);
@@ -338,6 +345,9 @@ int main(int argc, char **argv){
 	glutMouseFunc(mouseListener);
 
 	glutMainLoop();		//The main loop of OpenGL
+
+    //clear/deallocate vectors
+    clear_vectors();
 
 	return 0;
 }
