@@ -293,6 +293,12 @@ void loadData(){
             spotlights.push_back(p);
         }
 
+        Floor *f = new Floor(1000, 20);
+        f->setColor(1.0, 1.0, 1.0);
+        f->setCoEfficients(0.2, 0.2, 0.2, 0.2);
+        f->setShine(10);
+        objects.push_back(f);
+
     } else {
         cout << "file not found!" << endl;
         exit(0);

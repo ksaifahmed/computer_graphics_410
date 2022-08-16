@@ -252,6 +252,40 @@ void SpotLight::read_spotlight(ifstream &ifs)
 }
 
 
+class Floor : public Object{
+    public:
+        Floor(int floorSize, int tileSize){
+            length = floorSize;
+            width = tileSize;
+        }
+
+        virtual void draw(){
+            // floorSize is length, tileSize is width
+            int row = length/width, col = length/width;
+            int quad_length = length/2;
+            for(int i=0; i<row; i++) {
+                for(int j=0; j<col; j++) {
+                    //xy-plane so z = 0
+                    Vector3D tile_origin_point(width*j - quad_length, width*i - quad_length, 0);
+
+                    //setting the color
+                    if((i+j)%2 == 0) glColor3f(0, 0, 0);
+                    else glColor3f(color[0], color[1], color[2]);
+
+                    glBegin(GL_QUADS);
+                    {
+                        glVertex3f(tile_origin_point.x, tile_origin_point.y, 0);
+                        glVertex3f(tile_origin_point.x+width, tile_origin_point.y, 0);
+                        glVertex3f(tile_origin_point.x+width, tile_origin_point.y+width, 0);
+                        glVertex3f(tile_origin_point.x, tile_origin_point.y+width, 0);
+                    }
+                    glEnd();
+                }
+            }
+        }
+};
+
+
 
 
 
