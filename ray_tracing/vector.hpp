@@ -11,7 +11,22 @@ class Vector3D{
         this->y = y;
         this->z = z;
     }
+    friend ostream &operator<<(ostream &out, const Vector3D &vect)
+    {
+        out << "point is: (";
+        out << vect.x << "," << vect.y << "," << vect.z;
+        out << ")" << endl;
+        return out;
+    }
+
+    friend istream &operator>>(istream &ins, Vector3D &vect)
+    {
+        ins >> vect.x >> vect.y >> vect.z;
+        return ins;
+    }
 };
+
+
 
 
 Vector3D get_Vector3D(double x, double y, double z)

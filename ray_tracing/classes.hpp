@@ -15,6 +15,8 @@ class Object{
         Object(){};
         virtual void draw(){}
         void setShine(int);
+        void print_obj();
+        void read_obj(ifstream &);
         void setColor(double, double, double);
         void setCoEfficients(double, double, double, double);
 };
@@ -39,16 +41,42 @@ void Object::setCoEfficients(double amb, double diff, double spec, double refl)
     coEfficients[3] = refl;
 }
 
+void Object::read_obj(ifstream &ifs)
+{
+    ifs >> color[0] >> color[1] >> color[2];
+    ifs >> coEfficients[0] >> coEfficients[1] >> coEfficients[2] >> coEfficients[3];
+    ifs >> shine;
+}
+
+void Object::print_obj()
+{
+    cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
+    cout << "coeff: " << coEfficients[0] << "," << coEfficients[1] << ",";
+    cout << coEfficients[2] << "," << coEfficients[3] << endl;
+    cout << "shine: " << shine << endl;
+}
+
 class Sphere : public Object{
     public:
         Vector3D centre;
-        Sphere(Vector3D, double);
+        Sphere(){};
         void draw();
+        void print();
+        void read_sphere(ifstream &);
 };
 
-Sphere::Sphere(Vector3D center, double radius){
-    this->centre = center;
-    length = radius;
+void Sphere::read_sphere(ifstream &ifs)
+{
+    ifs >> centre >> length;
+    read_obj(ifs);
+}
+
+void Sphere::print()
+{
+    cout << "\nSphere=================\n";
+    cout << "centre: " << centre;
+    cout << "rad: " << length;
+    print_obj();
 }
 
 void Sphere::draw()
@@ -101,17 +129,11 @@ void Sphere::draw()
 class Triangle : public Object{
     public:
         Vector3D points[3];
-        Triangle(Vector3D *);
+        Triangle(){};
         void draw();
+        void print();
+        void read_triangle(ifstream &);
 };
-
-Triangle::Triangle(Vector3D *p){
-    for(int i=0; i<3; i++){
-        points[i].x = p[i].x;
-        points[i].y = p[i].y;
-        points[i].z = p[i].z;
-    }
-}
 
 void Triangle::draw()
 {
@@ -126,3 +148,96 @@ void Triangle::draw()
     glEnd();
 
 }
+
+void Triangle::read_triangle(ifstream &ifs)
+{
+    for(int i=0; i<3; i++)
+        ifs >> points[i];
+    read_obj(ifs);
+}
+
+
+void Triangle::print()
+{
+    cout << "\nTriangle=================\n";
+    cout << "Vertices:" << endl;
+    cout << points[0] << points[1] << points[2];
+    print_obj();
+}
+
+class General : public Object{
+    public:
+        Vector3D centre;
+        double a, b, c, d, e;
+        double f, g, h, i, j;
+        General(){};
+        void draw(){};
+        void print();
+        void read_general(ifstream &);
+};
+
+
+void General::read_general(ifstream &ifs)
+{
+    ifs >> a >> b >> c >> d >> e;
+    ifs >> f >> g >> h >> i >> j;
+    ifs >> centre;
+    ifs >> length >> width >> height;
+    read_obj(ifs);
+}
+
+
+void General::print()
+{
+    cout << "\nGeneral Object=================\n";
+    cout << "equation: " << endl;
+    cout << "a: " << a << ", b: " << b << ", c: " << c << ", d: " << d << ", e: " << e << endl;
+    cout << "f: " << f << ", g: " << g << ", h: " << h << ", i: " << i << ", j: " << j << endl;
+    cout << "centre: " << centre << endl;
+    cout << "length: " << length << ", width: " << width << ", height: " << height << endl;
+    print_obj();
+}
+
+
+class PointLight{
+    public:
+        Vector3D light_pos;
+        double color[3];
+
+        PointLight(){}
+        void read_pointlight(ifstream &);
+};
+
+void PointLight::read_pointlight(ifstream &ifs)
+{
+    ifs >> light_pos;
+    ifs >> color[0] >> color[1] >> color[2];
+}
+
+class SpotLight{
+    PointLight point_light;
+    Vector3D light_direction;
+    double cutoff_angle;
+
+    SpotLight(){}
+    void read_spotlight(ifstream &);
+};
+
+void SpotLight::read_spotlight(ifstream &ifs)
+{
+    point_light.read_pointlight(ifs);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

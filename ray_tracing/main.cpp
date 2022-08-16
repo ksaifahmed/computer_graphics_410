@@ -18,12 +18,16 @@ double cameraHeight;
 double cameraAngle;
 int drawgrid;
 int drawaxes;
-double angle;
 
 
 //Global camera data ===============================
 Vector3D c_pos, u, l, r;
-//Shape data=================================================
+
+//Global data
+int recursion_level, screenWidth, screenHeight;
+vector <Object> objects;
+vector <PointLight> pointlights;
+vector <SpotLight> spotlights;
 
 
 void drawAxes()
@@ -221,12 +225,6 @@ void display(){
     //drawSquare(10);
 
     //drawSS();
-    Vector3D v(30, 30, 0), v1(0, 0, 0), v2(5, 7, 0);
-    Vector3D coord[3];
-    coord[0] = v; coord[1] = v1; coord[2] = v2;
-    Triangle sp(coord);
-    sp.setColor(1, 0 , 0);
-    sp.draw();
 
     //drawCircle(30,24);
 
@@ -243,7 +241,6 @@ void display(){
 
 
 void animate(){
-	angle+=0.05;
 	//codes for any changes in Models, Camera
 	glutPostRedisplay();
 }
@@ -254,7 +251,6 @@ void init(){
 	drawaxes=1;
 	cameraHeight=150.0;
 	cameraAngle=1.0;
-	angle=0;
 
 	//camera vectors init=========================
     u.x = 0; u.y = 0; u.z = 1;
@@ -282,16 +278,43 @@ void init(){
 	//near distance
 	//far distance
 }
+
+
 void loadData(){
 
-    ifstream input("E:\\Ray Tracing\\scene.txt");
-    if(input.is_open()){
-        string line;
-        while(getline(input, line)){
-            cout << line << endl;
-        }
+    ifstream ifs("E:\\CSE 410\\ray_tracing\\scene.txt");
+    if(ifs.is_open()){
+        ifs >> recursion_level >> screenHeight;
+        int n; string type;
+        ifs >> n;
 
+        for(int i=0; i<n; i++){
+            ifs >> type;
+            if(!type.compare("sphere")) {
+                Sphere sp;
+                sp.read_sphere(ifs);
+                sp.print();
+                objects.push_back(sp);
+            }
+            else if(!type.compare("triangle")) {
+                Triangle sp;
+                sp.read_triangle(ifs);
+                sp.print();
+                objects.push_back(sp);
+            }
+            else if(!type.compare("general")) {
+                General sp;
+                sp.read_general(ifs);
+                sp.print();
+                objects.push_back(sp);
+            }
+        }
+        screenWidth = screenHeight;
+    } else {
+        cout << "file not found!" << endl;
+        exit(0);
     }
+
 
 }
 int main(int argc, char **argv){
