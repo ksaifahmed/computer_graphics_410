@@ -15,19 +15,15 @@
 int drawgrid;
 int drawaxes;
 
-
-//Global camera data ===============================
-Vector3D c_pos, u, l, r;
-
 //Global data
 int recursion_level, imageWidth, imageHeight;
 int bmp_counter = 0;
-vector <Object *> objects;
-vector <PointLight *> pointlights;
-vector <SpotLight *> spotlights;
+
 int windowHeight = 500;
 int windowWidth = 500;
 double viewAngle = 80.0;
+
+//header files have object vectors!
 
 
 void drawAxes()

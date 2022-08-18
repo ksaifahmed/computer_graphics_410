@@ -3,6 +3,7 @@ using namespace std;
 #include "vector.hpp"
 
 
+//====================LIGHTS AND RAY CLASSES START==========================================
 class Ray{
     public:
         Vector3D start;
@@ -16,6 +17,122 @@ Ray::Ray(Vector3D s, Vector3D d)
     dir.normalize();
 }
 
+class PointLight{
+    public:
+        Vector3D light_pos;
+        double color[3];
+
+        PointLight(){}
+        void print();
+        void read_pointlight(ifstream &);
+        void draw()
+        {
+            glPushMatrix(); //==================
+            glTranslated(light_pos.x, light_pos.y, light_pos.z);
+            Vector3D points[100][100];
+            int i,j;
+            int slices = 24, stacks = 30;
+            double h,r,length = 1.0;
+            glColor3f(color[0], color[1], color[2]);
+
+            //generate points
+            for(i=0;i<=stacks;i++)
+            {
+                h=length*sin(((double)i/(double)stacks)*(pi/2));
+                r=length*cos(((double)i/(double)stacks)*(pi/2));
+                for(j=0;j<=slices;j++)
+                {
+                    points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
+                    points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
+                    points[i][j].z=h;
+                }
+            }
+            //draw quads using generated points
+            for(i=0;i<stacks;i++)
+            {
+                for(j=0;j<slices;j++)
+                {
+                    glBegin(GL_QUADS);{
+                        //upper hemisphere
+                        glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
+                        glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+                        glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+                        //lower hemisphere
+                        glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
+                        glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
+                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
+                        glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
+                    }glEnd();
+                }
+            }
+
+            glPopMatrix(); //===============
+        }
+};
+
+void PointLight::print()
+{
+    cout << "\nPoint Light==========\n";
+    cout << light_pos;
+    cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
+}
+
+void PointLight::read_pointlight(ifstream &ifs)
+{
+    ifs >> light_pos;
+    ifs >> color[0] >> color[1] >> color[2];
+}
+
+class SpotLight{
+    public:
+        PointLight point_light;
+        Vector3D light_direction;
+        double cutoff_angle;
+
+        SpotLight(){}
+        void print();
+        void read_spotlight(ifstream &);
+        void draw()
+        {
+            point_light.draw();
+            Vector3D from = point_light.light_pos;
+            Vector3D to = point_light.light_pos + light_direction*10.0;
+            glBegin(GL_LINES);{
+                glVertex3f(from.x, from.y, from.z);
+                glVertex3f(to.x, to.y, to.z);
+            }glEnd();
+        }
+};
+
+
+void SpotLight::print()
+{
+    cout << "\nSpot Light==========\n";
+    cout << point_light.light_pos;
+    cout << "colors: " << point_light.color[0] << "," << point_light.color[1] << "," << point_light.color[2] << endl;
+    cout << light_direction;
+    cout << "cutoff angle: " << cutoff_angle << endl;
+}
+void SpotLight::read_spotlight(ifstream &ifs)
+{
+    point_light.read_pointlight(ifs);
+    ifs >> light_direction >> cutoff_angle;
+}
+
+//Global Light Data ========
+vector <PointLight *> pointlights;
+vector <SpotLight *> spotlights;
+
+//====================LIGHTS AND RAY CLASSES END==========================================
+
+
+
+
+
+//====================OBJECT CLASS START==========================================
+class Object;
+vector <Object *> objects;
 
 class Object{
     public:
@@ -27,15 +144,79 @@ class Object{
 
         Object(){ obj_type = 0; }
         virtual void draw() = 0;
+        virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray) = 0;
         void setShine(int);
         void print_obj();
+
         void read_obj(ifstream &);
         void setColor(double, double, double);
         void setCoEfficients(double, double, double, double);
         virtual double intersect(Ray ray, double *col, int level){
             return -1.0;
         }
+
+        void illuminate(Ray ray, double *col, double tMin)
+        {
+            for(int i=0; i<3; i++)
+                col[i] += color[i] * coEfficients[0]; //AMBIENT
+
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+            for (int i=0; i<pointlights.size(); i++)
+            {
+                PointLight *l = pointlights.at(i);
+                bool shaded = false;
+                Ray incident = Ray(l->light_pos, intersec_point - (l->light_pos));
+                Ray normal = get_normal(intersec_point, incident);
+                Ray reflected = Ray(intersec_point, incident.dir - normal.dir * ((incident.dir^normal.dir)*2)  ); //R = L - 2(L.N)N
+
+                double selft = (intersec_point - (l->light_pos)).get_length();
+
+                if (selft < ZERO)
+                    continue;
+
+                for(int k=0; k<objects.size(); k++)
+                {
+                    Object *o = objects.at(k);
+                    double ot = o->intersect(incident, col, 0);
+                    if (ot > 0 && ot + ZERO < selft)
+                    {
+                        shaded = true;
+                        break;
+                    }
+                }
+
+                if (!shaded)
+                {
+                    double phongValue = max(0.0, (-ray.dir)^reflected.dir);
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        col[i] += l->color[i] * coEfficients[1] * max(0.0, (-incident.dir)^normal.dir) * color[i];
+                        col[i] += l->color[i] * coEfficients[2] * pow(phongValue, shine);
+                    }
+                }
+            }
+
+
+
+            //Other codes here//
+
+
+            //keep colors within range:
+            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
+            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
+        }
+
 };
+
+
+
+
+
+//Global camera data =========
+Vector3D c_pos, u, l, r;
+// ================================
+
 
 void Object::setColor(double r, double g, double b)
 {
@@ -71,7 +252,12 @@ void Object::print_obj()
     cout << coEfficients[2] << "," << coEfficients[3] << endl;
     cout << "shine: " << shine << endl;
 }
+//====================OBJECT CLASS END==========================================
 
+
+
+
+//====================SPHERE CLASS START==========================================
 class Sphere : public Object{
     public:
         Vector3D centre;
@@ -128,6 +314,7 @@ class Sphere : public Object{
 
         double get_tMin(Ray ray)
         {
+            ray.start = ray.start - centre; //translate using centre
             double a = 1.0; //ray->dir DOT ray->dir AKA UNIT VECTOR LEN
             double discrim, t1, t2, b, c; //default: no intersection
             b = (ray.start^ray.dir) * 2.0;
@@ -141,26 +328,17 @@ class Sphere : public Object{
             return -1.0;
         }
 
+        virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray)
+        {
+            return Ray(intersec_point, intersec_point - centre);
+        }
+
         virtual double intersect(Ray ray, double *col, int level) {
-            ray.start = ray.start - centre; //translate using centre
             double tMin = get_tMin(ray);
             if(level == 0) return tMin;
 
-            Vector3D intersec_point = ray.start + ray.dir * tMin;
-            //get intersection color?
-
-            //Ambient lighting
-            for(int i=0; i<3; i++)
-                col[i] += color[i] * coEfficients[0]; //AMBIENT
-
-
-            //Other codes here//
-
-
-            //keep colors within range:
-            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
-            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
-
+            //illumination function same for all
+            illuminate(ray, col, tMin);
             return tMin;
         }
 
@@ -179,7 +357,12 @@ void Sphere::print()
     cout << "rad: " << length << endl;
     print_obj();
 }
+//====================SPHERE CLASS END==========================================
 
+
+
+
+//=======================TRIANGLE CLASS START==========================================
 class Triangle : public Object{
     public:
         int type = 2;
@@ -202,6 +385,15 @@ class Triangle : public Object{
 
         }
 
+        virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray)
+        {
+            Vector3D dir = (points[1] - points[0]).cross(points[2] - points[0]);
+            if ((-incident_ray.dir^dir) >= 0) //cosine is +ve
+                return Ray(intersec_point, dir);
+            else
+                return Ray(intersec_point, -dir);
+        }
+
         double get_tMin(Ray ray)
         {
             Vector3D A_B = points[1] - points[0];
@@ -218,25 +410,12 @@ class Triangle : public Object{
             return solutions.z;
         }
 
-        virtual double intersect(Ray ray, double *col, int level)
-        {
+        virtual double intersect(Ray ray, double *col, int level) {
             double tMin = get_tMin(ray);
             if(level == 0) return tMin;
 
-            Vector3D intersec_point = ray.start + ray.dir * tMin;
-
-            //Ambient lighting
-            for(int i=0; i<3; i++)
-                col[i] += color[i] * coEfficients[0]; //AMBIENT
-
-
-            //Other codes here//
-
-
-            //keep colors within range:
-            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
-            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
-
+            //illumination function same for all
+            illuminate(ray, col, tMin);
             return tMin;
         }
 };
@@ -258,7 +437,13 @@ void Triangle::print()
     cout << points[0] << points[1] << points[2];
     print_obj();
 }
+//=======================TRIANGLE CLASS END==========================================
 
+
+
+
+
+//=======================GENERAL QUADRIC SURFACE START==========================================
 class General : public Object{
     public:
         Vector3D centre;
@@ -268,6 +453,13 @@ class General : public Object{
         virtual void draw(){ return; }
         void print();
         void read_general(ifstream &);
+
+        virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray)
+        {
+            double x = intersec_point.x, y = intersec_point.y, z = intersec_point.z;
+            Vector3D dir(2*a*x + d*y + e*z + g, 2*b*y + d*x + f*z + h, 2*c*z + e*x + f*y + i);
+            return Ray(intersec_point, dir);
+        }
 
         bool falls_inside_reference_cube(Vector3D point)
         {
@@ -322,25 +514,12 @@ class General : public Object{
             return -1.0;
         }
 
-        virtual double intersect(Ray ray, double *col, int level)
-        {
+        virtual double intersect(Ray ray, double *col, int level) {
             double tMin = get_tMin(ray);
             if(level == 0) return tMin;
 
-            Vector3D intersec_point = ray.start + ray.dir * tMin;
-
-            //Ambient lighting
-            for(int i=0; i<3; i++)
-                col[i] += color[i] * coEfficients[0]; //AMBIENT
-
-
-            //Other codes here//
-
-
-            //keep colors within range:
-            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
-            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
-
+            //illumination function same for all
+            illuminate(ray, col, tMin);
             return tMin;
         }
 };
@@ -366,8 +545,13 @@ void General::print()
     cout << "length: " << length << ", width: " << width << ", height: " << height << endl;
     print_obj();
 }
+//=======================GENERAL QUADRIC SURFACE END==========================================
 
 
+
+
+
+//=======================FLOOR CLASS START==========================================
 class Floor : public Object{
     public:
         Floor(int floorSize, int tileSize){
@@ -400,11 +584,18 @@ class Floor : public Object{
             }
         }
 
+        virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray)
+        {
+            Vector3D normal(0, 0, 1);
+            if (incident_ray.start.z > 0) return Ray(intersec_point, normal);
+            return Ray(intersec_point, -normal);
+        }
+
         double get_tMin(Ray ray)
         {
             Vector3D n(0, 0, 1);
             //if cosine -ve, take -ve z-axis aka eye below floor
-//            if((n^c_pos) < ZERO) n = -n;
+            // if((n^c_pos) < ZERO) n = -n;
 
             double denom = n^ray.dir;
             if(denom == 0.0) return -1.0;
@@ -420,141 +611,15 @@ class Floor : public Object{
 
         virtual double intersect(Ray ray, double *col, int level) {
             double tMin = get_tMin(ray);
-            //cout << "tmin is" << tMin << endl;
             if(level == 0) return tMin;
 
-            Vector3D intersec_point = ray.start + ray.dir * tMin;
-            //cout << intersec_point ;
-            int i = (intersec_point.x + length/2.0) / width;        //width is tileSize
-            int j = (intersec_point.y + length/2.0) / width;
-
-            //Ambient lighting
-            double color = 0; //black tile
-            if((i+j)%2 == 1) color = 1; //white if odd
-            for(int i=0; i<3; i++)
-                col[i] += color * coEfficients[0]; //AMBIENT
-
-
-            //Other codes here//
-
-
-            //keep colors within range:
-            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
-            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
-
+            //illumination function same for all
+            illuminate(ray, col, tMin);
             return tMin;
         }
 
-
 };
-
-
-class PointLight{
-    public:
-        Vector3D light_pos;
-        double color[3];
-
-        PointLight(){}
-        void print();
-        void read_pointlight(ifstream &);
-        void draw()
-        {
-            glPushMatrix(); //=========================================
-            glTranslated(light_pos.x, light_pos.y, light_pos.z);
-            Vector3D points[100][100];
-            int i,j;
-            int slices = 24, stacks = 30;
-            double h,r,length = 1.0;
-            glColor3f(color[0], color[1], color[2]);
-
-            //generate points
-            for(i=0;i<=stacks;i++)
-            {
-                h=length*sin(((double)i/(double)stacks)*(pi/2));
-                r=length*cos(((double)i/(double)stacks)*(pi/2));
-                for(j=0;j<=slices;j++)
-                {
-                    points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
-                    points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
-                    points[i][j].z=h;
-                }
-            }
-            //draw quads using generated points
-            for(i=0;i<stacks;i++)
-            {
-                for(j=0;j<slices;j++)
-                {
-                    glBegin(GL_QUADS);{
-                        //upper hemisphere
-                        glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
-                        glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
-                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
-                        glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
-                        //lower hemisphere
-                        glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
-                        glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
-                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
-                        glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
-                    }glEnd();
-                }
-            }
-
-            glPopMatrix(); //=====================================================
-        }
-};
-
-void PointLight::print()
-{
-    cout << "\nPoint Light==========\n";
-    cout << light_pos;
-    cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
-}
-
-void PointLight::read_pointlight(ifstream &ifs)
-{
-    ifs >> light_pos;
-    ifs >> color[0] >> color[1] >> color[2];
-}
-
-class SpotLight{
-    public:
-        PointLight point_light;
-        Vector3D light_direction;
-        double cutoff_angle;
-
-        SpotLight(){}
-        void print();
-        void read_spotlight(ifstream &);
-        void draw()
-        {
-            point_light.draw();
-            Vector3D from = point_light.light_pos;
-            Vector3D to = point_light.light_pos + light_direction*10.0;
-            glBegin(GL_LINES);{
-                glVertex3f(from.x, from.y, from.z);
-                glVertex3f(to.x, to.y, to.z);
-            }glEnd();
-        }
-};
-
-
-void SpotLight::print()
-{
-    cout << "\nSpot Light==========\n";
-    cout << point_light.light_pos;
-    cout << "colors: " << point_light.color[0] << "," << point_light.color[1] << "," << point_light.color[2] << endl;
-    cout << light_direction;
-    cout << "cutoff angle: " << cutoff_angle << endl;
-}
-void SpotLight::read_spotlight(ifstream &ifs)
-{
-    point_light.read_pointlight(ifs);
-    ifs >> light_direction >> cutoff_angle;
-}
-
-
-
-
+//=======================FLOOR CLASS END==========================================
 
 
 
