@@ -126,24 +126,26 @@ class Sphere : public Object{
             glPopMatrix(); //=====================================================
         }
 
-        virtual double intersect(Ray ray, double *col, int level) {
-            double a, b, c, tMin = -1; //default: no intersection
-            double discrim, sol1, sol2;
-            ray.start = ray.start - centre; //translate using centre
-
-            //coefficients of quad equation
-            a = 1.0; // ray->dir DOT ray->dir AKA UNIT VECTOR LEN
+        double get_tMin(Ray ray)
+        {
+            double a = 1.0; //ray->dir DOT ray->dir AKA UNIT VECTOR LEN
+            double discrim, sol1, sol2, b, c; //default: no intersection
             b = (ray.start^ray.dir) * 2.0;
             c = (ray.start^ray.start) - (length*length);
 
-            //solving eq...
             discrim = b*b-4*a*c;
-            if(discrim >= 0){
-                sol1 = (-b-sqrt(discrim))/(2*a);
-                sol2 = (-b+sqrt(discrim))/(2*a);
-                if(sol1 > 0) tMin = sol1;
-                else if(sol2 > 0) tMin = sol2;
-            } //no intersection if d < 0 || both sol < 0
+            if(discrim < 0) return -1.0;
+            sol1 = (-b-sqrt(discrim))/(2*a);
+            sol2 = (-b+sqrt(discrim))/(2*a);
+            if(sol1 > 0) return sol1; //take smallest +ve
+            else if(sol2 > 0) return sol2;
+            return -1.0;
+        }
+
+        virtual double intersect(Ray ray, double *col, int level) {
+            ray.start = ray.start - centre; //translate using centre
+            double tMin = get_tMin(ray);
+            if(level == 0) return tMin;
 
             Vector3D intersec_point = ray.start + ray.dir * tMin;
             //get intersection color?
