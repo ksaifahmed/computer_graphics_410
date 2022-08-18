@@ -203,9 +203,42 @@ class Triangle : public Object{
 
         }
 
-        virtual double intersect(Ray r, double *col, int level)
+        double get_tMin(Ray ray)
         {
-            return -1.0;
+            Vector3D A_B = points[1] - points[0];
+            Vector3D C_B = points[2] - points[0];
+            Vector3D D = -ray.dir;
+
+            Vector3D solutions = solve_tri_linears(A_B.x, C_B.x, D.x, ray.start.x-points[0].x,
+                                                   A_B.y, C_B.y, D.y, ray.start.y-points[0].y,
+                                                   A_B.z, C_B.z, D.z, ray.start.z-points[0].z);
+            if(solutions.x + solutions.y > 1) return -1.0;
+            if(solutions.x < 0) return -1.0;
+            if(solutions.x < 0) return -1.0;
+            //cout << "tmin is: " << solutions.z << endl;
+            return solutions.z;
+        }
+
+        virtual double intersect(Ray ray, double *col, int level)
+        {
+            double tMin = get_tMin(ray);
+            if(level == 0) return tMin;
+
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+
+            //Ambient lighting
+            for(int i=0; i<3; i++)
+                col[i] += color[i] * coEfficients[0]; //AMBIENT
+
+
+            //Other codes here//
+
+
+            //keep colors within range:
+            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
+            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
+
+            return tMin;
         }
 };
 
@@ -329,7 +362,7 @@ class Floor : public Object{
             double color = 0; //black tile
             if((i+j)%2 == 1) color = 1; //white if odd
             for(int i=0; i<3; i++)
-                col[i] += color * coEfficients[0]; //AMBIENT
+                col[i] += color * 1.0; //AMBIENT
 
 
             //Other codes here//

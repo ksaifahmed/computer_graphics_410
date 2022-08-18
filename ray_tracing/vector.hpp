@@ -213,3 +213,70 @@ Vector3D rotate_about_Vector3D(Vector3D d, Vector3D o, double degrees)
     return d;
 }
 
+pair<double, double> solve_bi_linear(double a, double b, double e, double c, double d, double f)
+{
+    //we solve the linear system using CRAMER'S RULE
+    //ax+by=e
+    //cx+dy=f
+    double determinant = a*d - b*c;
+    if(determinant != 0) {
+        double x = (e*d - b*f)/determinant;
+        double y = (a*f - e*c)/determinant;
+        return make_pair(x, y);
+    } else {
+        return make_pair(10, 10);
+    }
+}
+
+double calc_determinant(double mat[3][3])
+{
+    double ans;
+    ans = mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2])
+          - mat[0][1] * (mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0])
+          + mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
+    return ans;
+}
+
+// linear equations using cramer's rule
+Vector3D solve_tri_linears(double a, double b, double c, double d, double e, double f, double g, double h, double i, double j, double k, double l)
+{
+    double coeff[3][4] = {
+        { a, b, c, d },
+        { e, f, g, h },
+        { i, j, k, l },
+    };
+
+    double det[3][3] = {
+        { coeff[0][0], coeff[0][1], coeff[0][2] },
+        { coeff[1][0], coeff[1][1], coeff[1][2] },
+        { coeff[2][0], coeff[2][1], coeff[2][2] },
+    };
+    double d1[3][3] = {
+        { coeff[0][3], coeff[0][1], coeff[0][2] },
+        { coeff[1][3], coeff[1][1], coeff[1][2] },
+        { coeff[2][3], coeff[2][1], coeff[2][2] },
+    };
+    double d2[3][3] = {
+        { coeff[0][0], coeff[0][3], coeff[0][2] },
+        { coeff[1][0], coeff[1][3], coeff[1][2] },
+        { coeff[2][0], coeff[2][3], coeff[2][2] },
+    };
+    double d3[3][3] = {
+        { coeff[0][0], coeff[0][1], coeff[0][3] },
+        { coeff[1][0], coeff[1][1], coeff[1][3] },
+        { coeff[2][0], coeff[2][1], coeff[2][3] },
+    };
+
+    double D = calc_determinant(det);
+    double D1 = calc_determinant(d1);
+    double D2 = calc_determinant(d2);
+    double D3 = calc_determinant(d3);
+
+    // if sol exists
+    if (D != 0) {
+        return Vector3D(D1/D, D2/D, D3/D);
+    }
+
+    //return invalid k1, k2, tmin
+    return Vector3D(10, 10, -1.0);
+}
