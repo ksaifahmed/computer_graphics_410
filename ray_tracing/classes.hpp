@@ -127,7 +127,7 @@ class Sphere : public Object{
         }
 
         virtual double intersect(Ray ray, double *col, int level) {
-            double a, b, c, tMin;
+            double a, b, c, tMin = -1; //default: no intersection
             double discrim, sol1, sol2;
             ray.start = ray.start - centre; //translate using centre
 
@@ -138,12 +138,12 @@ class Sphere : public Object{
 
             //solving eq...
             discrim = b*b-4*a*c;
-            if(discrim < 0) tMin = -1; //no intersection
-            sol1 = (-b-sqrt(discrim))/(2*a);
-            sol2 = (-b+sqrt(discrim))/(2*a);
-            if(sol1 > 0) tMin = sol1;
-            else if(sol2 > 0) tMin = sol2;
-            else tMin = -1; //both -ve sol of t //no intersection
+            if(discrim >= 0){
+                sol1 = (-b-sqrt(discrim))/(2*a);
+                sol2 = (-b+sqrt(discrim))/(2*a);
+                if(sol1 > 0) tMin = sol1;
+                else if(sol2 > 0) tMin = sol2;
+            } //no intersection if d < 0 || both sol < 0
 
             Vector3D intersec_point = ray.start + ray.dir * tMin;
             //get intersection color?
