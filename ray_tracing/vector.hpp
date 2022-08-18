@@ -213,20 +213,16 @@ Vector3D rotate_about_Vector3D(Vector3D d, Vector3D o, double degrees)
     return d;
 }
 
-pair<double, double> solve_bi_linear(double a, double b, double e, double c, double d, double f)
+//quad equation solution
+Vector3D solve_quad(double a, double b, double c)
 {
-    //we solve the linear system using CRAMER'S RULE
-    //ax+by=e
-    //cx+dy=f
-    double determinant = a*d - b*c;
-    if(determinant != 0) {
-        double x = (e*d - b*f)/determinant;
-        double y = (a*f - e*c)/determinant;
-        return make_pair(x, y);
-    } else {
-        return make_pair(10, 10);
-    }
+    double discrim = b*b-4*a*c;
+    if(discrim < 0) return Vector3D(-1, -1, -1);
+    double sol1 = (-b-sqrt(discrim))/(2*a);
+    double sol2 = (-b+sqrt(discrim))/(2*a);
+    return Vector3D(sol1, sol2, 0);
 }
+
 
 double calc_determinant(double mat[3][3])
 {
@@ -237,8 +233,10 @@ double calc_determinant(double mat[3][3])
     return ans;
 }
 
-// linear equations using cramer's rule
-Vector3D solve_tri_linears(double a, double b, double c, double d, double e, double f, double g, double h, double i, double j, double k, double l)
+// hard coded triple linear equations using cramer's rule
+Vector3D solve_tri_linears(double a, double b, double c, double d,
+                           double e, double f, double g, double h,
+                           double i, double j, double k, double l)
 {
     double coeff[3][4] = {
         { a, b, c, d },

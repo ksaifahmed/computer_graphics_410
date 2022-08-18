@@ -129,16 +129,15 @@ class Sphere : public Object{
         double get_tMin(Ray ray)
         {
             double a = 1.0; //ray->dir DOT ray->dir AKA UNIT VECTOR LEN
-            double discrim, sol1, sol2, b, c; //default: no intersection
+            double discrim, t1, t2, b, c; //default: no intersection
             b = (ray.start^ray.dir) * 2.0;
             c = (ray.start^ray.start) - (length*length);
 
-            discrim = b*b-4*a*c;
-            if(discrim < 0) return -1.0;
-            sol1 = (-b-sqrt(discrim))/(2*a);
-            sol2 = (-b+sqrt(discrim))/(2*a);
-            if(sol1 > 0) return sol1; //take smallest +ve
-            else if(sol2 > 0) return sol2;
+            Vector3D solutions = solve_quad(a, b, c);
+            if(solutions.z < 0) return -1.0; //no solution
+            t1 = solutions.x; t2 = solutions.y;
+            if(t1 > 0) return t1;
+            if(t2 > 0) return t2;
             return -1.0;
         }
 
@@ -269,9 +268,80 @@ class General : public Object{
         virtual void draw(){ return; }
         void print();
         void read_general(ifstream &);
-        virtual double intersect(Ray *r, double *col, int level)
+
+        bool falls_inside_reference_cube(Vector3D point)
         {
+            double dimensions[] = {length, width, height};
+            double point_arr[] = {point.x, point.y, point.z};
+            double ref_point[] = {centre.x, centre.y, centre.z};
+            for(int i = 0; i < 3; i++)
+            {
+                if(fabs(dimensions[i]) < ZERO) continue; //no clipping required if dim == 0
+                if(point_arr[i] < ref_point[i]) return false;
+                if(point_arr[i] > ref_point[i]+dimensions[i]) return false;
+            }
+            return true;
+        }
+
+        double get_tMin(Ray ray)
+        {
+            //for simple code :)
+            double rox = ray.start.x;
+            double roy = ray.start.y;
+            double roz = ray.start.z;
+            double rdx = ray.dir.x;
+            double rdy = ray.dir.y;
+            double rdz = ray.dir.z;
+
+            //so much work for solving a quadratic equation :)
+            double coeff_A = a*rdx*rdx + b*rdy*rdy + c*rdz*rdz;
+            coeff_A += d*rdx*rdy + e*rdx*rdz + f*rdy*rdz;
+
+            double coeff_B = 2*a*rox*rdx + 2*b*roy*rdy + 2*c*roz*rdz;
+            coeff_B += d*rox*rdy + rdx*roy*d + e*rox*rdz + e*rdx*roz;
+            coeff_B += f*roy*rdz + f*rdy*roz + g*rdx + h*rdy + i*rdz;
+
+            double coeff_C = a*rox*rox + b*roy*roy + c*roz*roz + d*rox*roy;
+            coeff_C += e*rox*roz + f*roy*roz + g*rox + h*roy + i*roz + j;
+
+            Vector3D solutions = solve_quad(coeff_A, coeff_B, coeff_C);
+            if(solutions.z < 0) return -1.0; // no solution
+            //roots of equation
+            double t1 = solutions.x, t2 = solutions.y;
+
+            //take smallest +ve first aka t1
+            Vector3D intersec_point;
+            if(t1 > 0){
+                intersec_point = ray.start + ray.dir * t1;
+                if(falls_inside_reference_cube(intersec_point)) return t1;
+            }
+            if(t2 > 0){
+                intersec_point = ray.start + ray.dir * t2;
+                if(falls_inside_reference_cube(intersec_point)) return t2;
+            }
             return -1.0;
+        }
+
+        virtual double intersect(Ray ray, double *col, int level)
+        {
+            double tMin = get_tMin(ray);
+            if(level == 0) return tMin;
+
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+
+            //Ambient lighting
+            for(int i=0; i<3; i++)
+                col[i] += color[i] * coEfficients[0]; //AMBIENT
+
+
+            //Other codes here//
+
+
+            //keep colors within range:
+            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
+            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
+
+            return tMin;
         }
 };
 
@@ -362,7 +432,7 @@ class Floor : public Object{
             double color = 0; //black tile
             if((i+j)%2 == 1) color = 1; //white if odd
             for(int i=0; i<3; i++)
-                col[i] += color * 1.0; //AMBIENT
+                col[i] += color * coEfficients[0]; //AMBIENT
 
 
             //Other codes here//
