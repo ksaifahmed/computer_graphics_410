@@ -265,6 +265,87 @@ void General::print()
 }
 
 
+class Floor : public Object{
+    public:
+        Floor(int floorSize, int tileSize){
+            length = floorSize;
+            width = tileSize;
+        }
+
+        virtual void draw(){
+            // floorSize is length, tileSize is width
+            int row = length/width, col = length/width;
+            int quad_length = length/2;
+            for(int i=0; i<row; i++) {
+                for(int j=0; j<col; j++) {
+                    //xy-plane so z = 0
+                    Vector3D tile_origin_point(width*j - quad_length, width*i - quad_length, 0);
+
+                    //setting the color
+                    if((i+j)%2 == 0) glColor3f(0, 0, 0);
+                    else glColor3f(color[0], color[1], color[2]);
+
+                    glBegin(GL_QUADS);
+                    {
+                        glVertex3f(tile_origin_point.x, tile_origin_point.y, 0);
+                        glVertex3f(tile_origin_point.x+width, tile_origin_point.y, 0);
+                        glVertex3f(tile_origin_point.x+width, tile_origin_point.y+width, 0);
+                        glVertex3f(tile_origin_point.x, tile_origin_point.y+width, 0);
+                    }
+                    glEnd();
+                }
+            }
+        }
+
+        double get_tMin(Ray ray)
+        {
+            Vector3D n(0, 0, 1);
+            //if cosine -ve, take -ve z-axis aka eye below floor
+//            if((n^c_pos) < ZERO) n = -n;
+
+            double denom = n^ray.dir;
+            if(denom == 0.0) return -1.0;
+
+            //Po is orgin so ZERO!!
+            double tMin = (-n^ray.start)/(denom);
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+            if (fabs(intersec_point.y) > length/2.0) return -1.0;   //length is floorSize :-D
+            if (fabs(intersec_point.x) > length/2.0) return -1.0;
+            return tMin;
+        }
+
+
+        virtual double intersect(Ray ray, double *col, int level) {
+            double tMin = get_tMin(ray);
+            //cout << "tmin is" << tMin << endl;
+            if(level == 0) return tMin;
+
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+            //cout << intersec_point ;
+            int i = (intersec_point.x + length/2.0) / width;        //width is tileSize
+            int j = (intersec_point.y + length/2.0) / width;
+
+            //Ambient lighting
+            double color = 0; //black tile
+            if((i+j)%2 == 1) color = 1; //white if odd
+            for(int i=0; i<3; i++)
+                col[i] += color * coEfficients[0]; //AMBIENT
+
+
+            //Other codes here//
+
+
+            //keep colors within range:
+            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
+            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
+
+            return tMin;
+        }
+
+
+};
+
+
 class PointLight{
     public:
         Vector3D light_pos;
@@ -315,38 +396,6 @@ void SpotLight::read_spotlight(ifstream &ifs)
 }
 
 
-class Floor : public Object{
-    public:
-        Floor(int floorSize, int tileSize){
-            length = floorSize;
-            width = tileSize;
-        }
-
-        virtual void draw(){
-            // floorSize is length, tileSize is width
-            int row = length/width, col = length/width;
-            int quad_length = length/2;
-            for(int i=0; i<row; i++) {
-                for(int j=0; j<col; j++) {
-                    //xy-plane so z = 0
-                    Vector3D tile_origin_point(width*j - quad_length, width*i - quad_length, 0);
-
-                    //setting the color
-                    if((i+j)%2 == 0) glColor3f(0, 0, 0);
-                    else glColor3f(color[0], color[1], color[2]);
-
-                    glBegin(GL_QUADS);
-                    {
-                        glVertex3f(tile_origin_point.x, tile_origin_point.y, 0);
-                        glVertex3f(tile_origin_point.x+width, tile_origin_point.y, 0);
-                        glVertex3f(tile_origin_point.x+width, tile_origin_point.y+width, 0);
-                        glVertex3f(tile_origin_point.x, tile_origin_point.y+width, 0);
-                    }
-                    glEnd();
-                }
-            }
-        }
-};
 
 
 

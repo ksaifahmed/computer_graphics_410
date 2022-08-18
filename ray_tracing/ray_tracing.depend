@@ -919,3 +919,30 @@
 	<limits>
 	<string>
 
+1660829455 source:g:\computer_graphics_410\ray_tracing\main.cpp
+	<GLUT/glut.h>
+	<GL/glut.h>
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	<windows.h>
+	"classes.hpp"
+	"bitmap_image.hpp"
+
+1660829900 g:\computer_graphics_410\ray_tracing\classes.hpp
+	<bits/stdc++.h>
+	"vector.hpp"
+
+1660828582 g:\computer_graphics_410\ray_tracing\vector.hpp
+	<bits/stdc++.h>
+
+1660828582 g:\computer_graphics_410\ray_tracing\bitmap_image.hpp
+	<algorithm>
+	<cmath>
+	<cstdlib>
+	<fstream>
+	<iostream>
+	<iterator>
+	<limits>
+	<string>
+
