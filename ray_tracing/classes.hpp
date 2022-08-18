@@ -354,6 +354,50 @@ class PointLight{
         PointLight(){}
         void print();
         void read_pointlight(ifstream &);
+        void draw()
+        {
+            glPushMatrix(); //=========================================
+            glTranslated(light_pos.x, light_pos.y, light_pos.z);
+            Vector3D points[100][100];
+            int i,j;
+            int slices = 24, stacks = 30;
+            double h,r,length = 1.0;
+            glColor3f(color[0], color[1], color[2]);
+
+            //generate points
+            for(i=0;i<=stacks;i++)
+            {
+                h=length*sin(((double)i/(double)stacks)*(pi/2));
+                r=length*cos(((double)i/(double)stacks)*(pi/2));
+                for(j=0;j<=slices;j++)
+                {
+                    points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
+                    points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
+                    points[i][j].z=h;
+                }
+            }
+            //draw quads using generated points
+            for(i=0;i<stacks;i++)
+            {
+                for(j=0;j<slices;j++)
+                {
+                    glBegin(GL_QUADS);{
+                        //upper hemisphere
+                        glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
+                        glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+                        glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+                        //lower hemisphere
+                        glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
+                        glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
+                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
+                        glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
+                    }glEnd();
+                }
+            }
+
+            glPopMatrix(); //=====================================================
+        }
 };
 
 void PointLight::print()
@@ -378,6 +422,16 @@ class SpotLight{
         SpotLight(){}
         void print();
         void read_spotlight(ifstream &);
+        void draw()
+        {
+            point_light.draw();
+            Vector3D from = point_light.light_pos;
+            Vector3D to = point_light.light_pos + light_direction*10.0;
+            glBegin(GL_LINES);{
+                glVertex3f(from.x, from.y, from.z);
+                glVertex3f(to.x, to.y, to.z);
+            }glEnd();
+        }
 };
 
 

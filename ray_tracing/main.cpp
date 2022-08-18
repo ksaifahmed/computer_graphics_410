@@ -237,6 +237,12 @@ void display(){
     for(int i=0; i<objects.size(); i++)
         objects.at(i)->draw();
 
+    for(int i=0; i<pointlights.size(); i++)
+        pointlights.at(i)->draw();
+
+    for(int i=0; i<spotlights.size(); i++)
+        spotlights.at(i)->draw();
+
 	glutSwapBuffers();
 }
 
