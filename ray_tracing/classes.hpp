@@ -1,8 +1,20 @@
 #include <bits/stdc++.h>
 using namespace std;
-
 #include "vector.hpp"
 
+
+class Ray{
+    public:
+        Vector3D start;
+        Vector3D dir;
+        Ray(Vector3D, Vector3D);
+};
+
+Ray::Ray(Vector3D s, Vector3D d)
+{
+    start = s; dir = d;
+    dir.normalize();
+}
 
 
 class Object{
@@ -20,6 +32,9 @@ class Object{
         void read_obj(ifstream &);
         void setColor(double, double, double);
         void setCoEfficients(double, double, double, double);
+        virtual double intersect(Ray ray, double *col, int level){
+            return -1.0;
+        }
 };
 
 void Object::setColor(double r, double g, double b)
@@ -111,6 +126,43 @@ class Sphere : public Object{
             glPopMatrix(); //=====================================================
         }
 
+        virtual double intersect(Ray ray, double *col, int level) {
+            double a, b, c, tMin;
+            double discrim, sol1, sol2;
+            ray.start = ray.start - centre; //translate using centre
+
+            //coefficients of quad equation
+            a = 1.0; // ray->dir DOT ray->dir AKA UNIT VECTOR LEN
+            b = (ray.start^ray.dir) * 2.0;
+            c = (ray.start^ray.start) - (length*length);
+
+            //solving eq...
+            discrim = b*b-4*a*c;
+            if(discrim < 0) tMin = -1; //no intersection
+            sol1 = (-b-sqrt(discrim))/(2*a);
+            sol2 = (-b+sqrt(discrim))/(2*a);
+            if(sol1 > 0) tMin = sol1;
+            else if(sol2 > 0) tMin = sol2;
+            else tMin = -1; //both -ve sol of t //no intersection
+
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+            //get intersection color?
+
+            //Ambient lighting
+            for(int i=0; i<3; i++)
+                col[i] += color[i] * coEfficients[0]; //AMBIENT
+
+
+            //Other codes here//
+
+
+            //keep colors within range:
+            for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
+            for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
+
+            return tMin;
+        }
+
 };
 
 void Sphere::read_sphere(ifstream &ifs)
@@ -148,6 +200,11 @@ class Triangle : public Object{
             glEnd();
 
         }
+
+        virtual double intersect(Ray r, double *col, int level)
+        {
+            return -1.0;
+        }
 };
 
 
@@ -177,6 +234,10 @@ class General : public Object{
         virtual void draw(){ return; }
         void print();
         void read_general(ifstream &);
+        virtual double intersect(Ray *r, double *col, int level)
+        {
+            return -1.0;
+        }
 };
 
 

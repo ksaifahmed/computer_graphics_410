@@ -10,8 +10,7 @@
 
 #include <windows.h>
 #include "classes.hpp"
-
-#define pi (2*acos(0.0))
+#include "bitmap_image.hpp"
 
 int drawgrid;
 int drawaxes;
@@ -21,10 +20,14 @@ int drawaxes;
 Vector3D c_pos, u, l, r;
 
 //Global data
-int recursion_level, screenWidth, screenHeight;
+int recursion_level, imageWidth, imageHeight;
+int bmp_counter = 0;
 vector <Object *> objects;
 vector <PointLight *> pointlights;
 vector <SpotLight *> spotlights;
+int windowHeight = 500;
+int windowWidth = 500;
+double viewAngle = 80.0;
 
 
 void drawAxes()
@@ -46,41 +49,75 @@ void drawAxes()
 }
 
 
-void drawGrid()
+double rad(double deg)
 {
-	int i;
-	if(drawgrid==1)
-	{
-		glColor3f(0.6, 0.6, 0.6);	//grey
-		glBegin(GL_LINES);{
-			for(i=-8;i<=8;i++){
-
-				if(i==0)
-					continue;	//SKIP the MAIN axes
-
-				//lines parallel to Y-axis
-				glVertex3f(i*10, -90, 0);
-				glVertex3f(i*10,  90, 0);
-
-				//lines parallel to X-axis
-				glVertex3f(-90, i*10, 0);
-				glVertex3f( 90, i*10, 0);
-			}
-		}glEnd();
-	}
+    return (pi * deg) / 180.0;
 }
 
-void drawSquare(double a)
+// capture method =======================================
+void capture()
 {
-    //glColor3f(1.0,0.0,0.0);
-	glBegin(GL_QUADS);{
-		glVertex3f( a, a,2);
-		glVertex3f( a,-a,2);
-		glVertex3f(-a,-a,2);
-		glVertex3f(-a, a,2);
-	}glEnd();
-}
+    cout << "===================DATA DUMP===========================\n";
+	cout << "capturing at pos: ..." << c_pos;
+    cout << "l: " << l << "r: " << r << "u: " << u;
+    cout << "viewAngle: " << viewAngle << endl;
 
+	// Initializing bitmap image
+	bitmap_image image(imageWidth, imageHeight);
+	for (int i = 0; i < imageWidth; i++)
+		for (int j = 0; j < imageHeight; j++)
+			image.set_pixel(i, j, 0, 0, 0);
+
+    double planeDistance = (windowHeight/2.0) / tan(rad(viewAngle/2.0));
+    Vector3D topLeft = c_pos + l*planeDistance - r*(windowWidth/2.0) + u*(windowHeight/2.0);
+
+    cout << "planeDistance: " << planeDistance << ", topLeft: " << topLeft;
+
+    double du = (1.0*windowWidth)/(1.0*imageWidth);
+    double dv = (1.0*windowHeight)/(1.0*imageHeight);
+
+    cout << "du is: " << du << ", dv is: " << dv << endl;
+
+    double *color = new double[3];
+    Vector3D tl_pixel = topLeft + r*(du*0.5) - u*(dv*0.5);
+    cout << "topLeft pixel: " << tl_pixel;
+
+    int nearest;
+    double t, tMin;
+    for(int i=0; i<imageWidth; i++) {
+        for(int j=0; j<imageHeight; j++) {
+            Vector3D current_pixel = tl_pixel + r*(i*du) - u*(j*dv);
+//            if(i+j <4) cout << "current pixel: " << current_pixel << endl;
+            Ray ray(c_pos, current_pixel-c_pos);
+//            if(i+j <4) cout << "ray: " << ray.dir;
+
+            //nearest object
+            nearest = INT_MAX;
+            tMin=INF;
+            for(int k=0; k<objects.size(); k++) {
+                color[0] = 0.0; color[1] = 0.0; color[2] = 0.0;
+                t = objects.at(k)->intersect(ray, color, 0);
+                if(t>0.0 && t<tMin) {
+                    tMin = t; nearest = k;
+                }
+            }
+
+            //set color of nearest object if exists
+            if(nearest < INT_MAX) {
+                color[0] = 0.0; color[1] = 0.0; color[2] = 0.0;
+                tMin = objects[nearest]->intersect(ray, color, 1);
+                color[0] *= 255.0; color[1] *= 255.0; color[2] *= 255.0;
+                image.set_pixel(i, j, round(color[0]), round(color[1]), round(color[2]));
+            }
+        }
+    }
+
+    delete[] color; // save memory :P
+	cout << "saving image...";
+    string image_name = "E:\\CSE 410\\ray_tracing\\output_" + std::to_string(++bmp_counter) + ".bmp";
+	image.save_image(image_name);
+    cout << "image saved\n===================CAPTURED===========================\n\n";
+}
 
 
 void keyboardListener(unsigned char key, int x,int y){
@@ -110,6 +147,10 @@ void keyboardListener(unsigned char key, int x,int y){
 
 		case '6':
 			axis_rotation(&u, &r, &l, -3);
+			break;
+
+		case '0':
+			capture();
 			break;
 
 		default:
@@ -181,30 +222,18 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 
 void display(){
 
-	//clear the display
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0,0,0,0);	//color black
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	/********************
-	/ set-up camera here
-	********************/
-	//load the correct matrix -- MODEL-VIEW matrix
 	glMatrixMode(GL_MODELVIEW);
-
-	//initialize the matrix
 	glLoadIdentity();
 
-	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
-	//gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
     gluLookAt(c_pos.x,c_pos.y,c_pos.z,    c_pos.x+l.x,c_pos.y+l.y,c_pos.z+l.z,   u.x,u.y,u.z);
-	gluLookAt(0,0,200,	0,0,0,	0,1,0);
 
 	glMatrixMode(GL_MODELVIEW);
 
+	//drawing in OpenGL
 	drawAxes();
-	drawGrid();
-
     for(int i=0; i<objects.size(); i++)
         objects.at(i)->draw();
 
@@ -226,7 +255,7 @@ void init(){
     u.x = 0; u.y = 0; u.z = 1;
     r.x = -1/sqrt(2); r.y = 1/sqrt(2); r.z = 0;
     l.x = -1/sqrt(2); l.y = -1/sqrt(2); l.z = 0;
-    c_pos.x = 100; c_pos.y = 100; c_pos.z = 0;
+    c_pos.x = 123.7003901; c_pos.y = 110.7472717; c_pos.z = 20;
 	//=============================================
 
 	//clear the screen
@@ -239,7 +268,7 @@ void init(){
 	glLoadIdentity();
 
 	//give PERSPECTIVE parameters
-	gluPerspective(80,	1,	1,	1000.0);
+	gluPerspective(viewAngle,	1,	1,	1000.0);
 }
 
 
@@ -247,8 +276,9 @@ void loadData(){
 
     ifstream ifs("E:\\CSE 410\\ray_tracing\\scene.txt");
     if(ifs.is_open()){
-        ifs >> recursion_level >> screenHeight;
-        screenWidth = screenHeight;
+        ifs >> recursion_level >> imageHeight;
+        imageWidth = imageHeight;
+
         int n; string type;
         ifs >> n;
 
@@ -258,19 +288,19 @@ void loadData(){
             if(!type.compare("sphere")) {
                 Sphere *sp = new Sphere();
                 sp->read_sphere(ifs);
-                sp->print();
+                //sp->print();
                 objects.push_back(sp);
             }
             else if(!type.compare("triangle")) {
                 Triangle *sp = new Triangle();
                 sp->read_triangle(ifs);
-                sp->print();
+                //sp->print();
                 objects.push_back(sp);
             }
             else if(!type.compare("general")) {
                 General *sp = new General();
                 sp->read_general(ifs);
-                sp->print();
+                //sp->print();
                 objects.push_back(sp);
             }
         }
@@ -280,7 +310,7 @@ void loadData(){
         for(int i=0; i<n; i++){
             PointLight *p = new PointLight();
             p->read_pointlight(ifs);
-            p->print();
+            //p->print();
             pointlights.push_back(p);
         }
 
@@ -289,7 +319,7 @@ void loadData(){
         for(int i=0; i<n; i++){
             SpotLight *p = new SpotLight();
             p->read_spotlight(ifs);
-            p->print();
+            //p->print();
             spotlights.push_back(p);
         }
 
@@ -330,16 +360,16 @@ void clear_vectors()
 
 int main(int argc, char **argv){
     //input from scene.txt
+    std::cout << std::setprecision(7) << std::fixed;
     loadData();
 
 	glutInit(&argc,argv);
-	glutInitWindowSize(500, 500);
+	glutInitWindowSize(windowHeight, windowWidth);
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
 	glutCreateWindow("My OpenGL Program");
 	init();
-
 
 	glEnable(GL_DEPTH_TEST);	//enable Depth Testing
 

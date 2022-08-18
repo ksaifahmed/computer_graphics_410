@@ -1,7 +1,10 @@
 #include <bits/stdc++.h>
 using namespace std;
+#define INF 1e10
+#define ZERO 1e-8
 #define pi (2*acos(0.0))
 
+// vector class ==============================================
 class Vector3D{
     public:
     double x, y, z;
@@ -24,11 +27,114 @@ class Vector3D{
         ins >> vect.x >> vect.y >> vect.z;
         return ins;
     }
+
+    //add vectors
+    Vector3D operator+(const Vector3D &vect) const
+    {
+        double x_ = this->x + vect.x;
+        double y_ = this->y + vect.y;
+        double z_ = this->z + vect.z;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //add constant
+    Vector3D operator+(double val) const
+    {
+        double x_ = this->x + val;
+        double y_ = this->y + val;
+        double z_ = this->z + val;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //sub vectors
+    Vector3D operator-(const Vector3D &vect) const
+    {
+        double x_ = this->x - vect.x;
+        double y_ = this->y - vect.y;
+        double z_ = this->z - vect.z;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //sub constant
+    Vector3D operator-(double val) const
+    {
+        double x_ = this->x - val;
+        double y_ = this->y - val;
+        double z_ = this->z - val;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //negate vectors
+    Vector3D operator-() const
+    {
+        double x_ = -this->x;
+        double y_ = -this->y;
+        double z_ = -this->z;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //mul constant
+    Vector3D operator*(double val) const
+    {
+        double x_ = this->x * val;
+        double y_ = this->y * val;
+        double z_ = this->z * val;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //divide constant
+    Vector3D operator/(double val) const
+    {
+        double x_ = this->x / val;
+        double y_ = this->y / val;
+        double z_ = this->z / val;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //dot product
+    double operator^(const Vector3D &vect) const
+    {
+        double x_ = this->x * vect.x;
+        x_ += this->y * vect.y;
+        x_ += this->z * vect.z;
+        return x_;
+    }
+
+    //cross product
+    Vector3D cross(Vector3D vect)
+    {
+        double x_  = this->y * vect.z - this->z * vect.y;
+        double y_  = this->z * vect.x - this->x * vect.z;
+        double z_  = this->x * vect.y - this->y * vect.x;
+        return Vector3D(x_, y_, z_);
+    }
+
+    //vector length
+    double get_length()
+    {
+        double x_ = this->x * this->x;
+        double y_ = this->y * this->y;
+        double z_ = this->z * this->z;
+        return sqrt(x_+y_+z_);
+    }
+
+    //normalize a vector
+    void normalize()
+    {
+        double val = get_length();
+        if(val < ZERO) {
+            cout << "vector len too small!\n";
+            return;
+        }
+        this->x = this->x / val;
+        this->y = this->y / val;
+        this->z = this->z / val;
+    }
+
 };
 
 
-
-
+//utils from first offline =====================
 Vector3D get_Vector3D(double x, double y, double z)
 {
     Vector3D p1;
