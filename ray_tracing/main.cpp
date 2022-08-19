@@ -304,7 +304,7 @@ void loadData(){
         for(int i=0; i<n; i++){
             PointLight *p = new PointLight();
             p->read_pointlight(ifs);
-            p->print();
+            //p->print();
             lights_list.push_back(p);
         }
 
@@ -313,7 +313,7 @@ void loadData(){
         for(int i=0; i<n; i++){
             SpotLight *p = new SpotLight();
             p->read_spotlight(ifs);
-            p->print();
+            //p->print();
             lights_list.push_back(p);
         }
 

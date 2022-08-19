@@ -381,16 +381,19 @@ class Sphere : public Object{
         double get_tMin(Ray ray)
         {
             ray.start = ray.start - centre; //translate using centre
-            double a = 1.0; //ray->dir DOT ray->dir AKA UNIT VECTOR LEN
-            double discrim, t1, t2, b, c; //default: no intersection
-            b = (ray.start^ray.dir) * 2.0;
-            c = (ray.start^ray.start) - (length*length);
+            double td = -ray.start^ray.dir; //sign of cosine of Ro and Rd
+            if(td < 0.0) return -1.0;
 
-            Vector3D solutions = solve_quad(a, b, c);
-            if(solutions.z < 0) return -1.0; //no solution
-            t1 = solutions.x; t2 = solutions.y;
-            if(t1 > 0) return t1;
-            if(t2 > 0) return t2;
+            double d_squared = (ray.start^ray.start) - td*td;
+            if(d_squared > length*length) return -1.0; //length is radius
+
+            double offset = sqrt(length*length - d_squared);
+            double t = td - offset;
+            if(t > 0.0) return t;
+
+            t = td + offset;
+            if(t > 0.0) return t;
+
             return -1.0;
         }
 
