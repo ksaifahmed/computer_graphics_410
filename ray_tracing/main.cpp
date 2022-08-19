@@ -314,13 +314,13 @@ void loadData(){
             SpotLight *p = new SpotLight();
             p->read_spotlight(ifs);
             p->print();
-            //lights_list.push_back(p);
+            lights_list.push_back(p);
         }
 
         Floor *f = new Floor(1000, 20);
         f->setColor(1.0, 1.0, 1.0);
-        f->setCoEfficients(0.3, 0.3, 0.3, 0.0);
-        f->setShine(20);
+        f->setCoEfficients(0.3, 0.3, 0.3, 0.3);
+        f->setShine(15);
         objects.push_back(f);
 
     } else {
