@@ -4,6 +4,13 @@ using namespace std;
 #define ZERO 1e-8
 #define pi (2*acos(0.0))
 
+
+double rad(double deg)
+{
+    return (pi * deg) / 180.0;
+}
+
+
 // vector class ==============================================
 class Vector3D{
     public:

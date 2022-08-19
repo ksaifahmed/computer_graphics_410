@@ -1,7 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 #include "vector.hpp"
-
+int recursion_level;
 
 //====================LIGHTS AND RAY CLASSES START==========================================
 class Ray{
@@ -21,11 +21,22 @@ class PointLight{
     public:
         Vector3D light_pos;
         double color[3];
-
         PointLight(){}
-        void print();
-        void read_pointlight(ifstream &);
-        void draw()
+
+        virtual void print()
+        {
+            cout << "\nPoint Light==========\n";
+            cout << light_pos;
+            cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
+        }
+
+        void read_pointlight(ifstream &ifs)
+        {
+            ifs >> light_pos;
+            ifs >> color[0] >> color[1] >> color[2];
+        }
+
+        virtual void draw()
         {
             glPushMatrix(); //==================
             glTranslated(light_pos.x, light_pos.y, light_pos.z);
@@ -71,33 +82,34 @@ class PointLight{
         }
 };
 
-void PointLight::print()
-{
-    cout << "\nPoint Light==========\n";
-    cout << light_pos;
-    cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
-}
 
-void PointLight::read_pointlight(ifstream &ifs)
-{
-    ifs >> light_pos;
-    ifs >> color[0] >> color[1] >> color[2];
-}
-
-class SpotLight{
+class SpotLight: public PointLight{
     public:
-        PointLight point_light;
         Vector3D light_direction;
         double cutoff_angle;
 
         SpotLight(){}
-        void print();
-        void read_spotlight(ifstream &);
-        void draw()
+        void print() override
         {
-            point_light.draw();
-            Vector3D from = point_light.light_pos;
-            Vector3D to = point_light.light_pos + light_direction*10.0;
+            cout << "\nSpot Light==========\n";
+            cout << light_pos;
+            cout << "colors: " << color[0] << "," << color[1] << "," << color[2] << endl;
+            cout << light_direction;
+            cout << "cutoff angle: " << cutoff_angle << endl;
+        }
+
+        void read_spotlight(ifstream &ifs)
+        {
+            PointLight::read_pointlight(ifs);
+            ifs >> light_direction >> cutoff_angle;
+            light_direction.normalize();
+        }
+
+        void draw() override
+        {
+            PointLight::draw();
+            Vector3D from = light_pos;
+            Vector3D to = light_pos + light_direction*10.0;
             glBegin(GL_LINES);{
                 glVertex3f(from.x, from.y, from.z);
                 glVertex3f(to.x, to.y, to.z);
@@ -106,23 +118,9 @@ class SpotLight{
 };
 
 
-void SpotLight::print()
-{
-    cout << "\nSpot Light==========\n";
-    cout << point_light.light_pos;
-    cout << "colors: " << point_light.color[0] << "," << point_light.color[1] << "," << point_light.color[2] << endl;
-    cout << light_direction;
-    cout << "cutoff angle: " << cutoff_angle << endl;
-}
-void SpotLight::read_spotlight(ifstream &ifs)
-{
-    point_light.read_pointlight(ifs);
-    ifs >> light_direction >> cutoff_angle;
-}
 
 //Global Light Data ========
-vector <PointLight *> pointlights;
-vector <SpotLight *> spotlights;
+vector <PointLight *> lights_list;
 
 //====================LIGHTS AND RAY CLASSES END==========================================
 
@@ -156,6 +154,8 @@ class Object{
             return -1.0;
         }
 
+
+        // GENERIC PHONG LIGHTING FUNCTION FOR ALL OBJECTS =========================================
         void illuminate(Ray ray, double *col, double tMin, bool isFloor=false)
         {
             Vector3D intersec_point = ray.start + ray.dir * tMin;
@@ -177,17 +177,26 @@ class Object{
             }
 
             //Specular and Diffuse Lighting
-            for (int i=0; i<pointlights.size(); i++)
+            for (int i=0; i<lights_list.size(); i++)
             {
                 bool light_obstructed = false;
-                PointLight *l = pointlights.at(i);
-                Vector3D incident_vect = intersec_point - l->light_pos;
+                PointLight *light = lights_list.at(i);
+                Vector3D incident_vect = intersec_point - light->light_pos;
+
+                //if spotlight, check if object is within cutoff angle
+                if(SpotLight* spotlight = dynamic_cast<SpotLight*>(light)){
+                    double angle = (incident_vect^spotlight->light_direction);
+                    angle /= (incident_vect.get_length()*spotlight->light_direction.get_length());
+                    angle = acos(angle);
+                    if(angle > rad(spotlight->cutoff_angle)) continue;
+                }
 
                 double light_distance = incident_vect.get_length();
                 if (light_distance < ZERO) //light source inside object
                     continue;
 
-                Ray L_ray = Ray(l->light_pos, incident_vect);
+                //Ray L_ray = Ray of Incidence | N_ray = Ray of Normal | R_ray = Ray of Reflection
+                Ray L_ray = Ray(light->light_pos, incident_vect);
                 Ray N_ray = get_normal(intersec_point, L_ray);
                 Vector3D R_dir = L_ray.dir - N_ray.dir * ((L_ray.dir^N_ray.dir)*2); //R = L - 2(L.N)N
                 Ray R_ray = Ray(intersec_point, R_dir);
@@ -205,33 +214,68 @@ class Object{
                 for (int i = 0; i < 3; i++) {
                     if(isFloor){
                         //diffuse lighting component
-                        col[i] += l->color[i] * coEfficients[1] * max((-L_ray.dir)^N_ray.dir, 0.0) * floor_col;
+                        col[i] += light->color[i] * coEfficients[1] * max((-L_ray.dir)^N_ray.dir, 0.0) * floor_col;
                         //specular lighting component
-                        col[i] += l->color[i] * coEfficients[2] * pow(max((-ray.dir)^R_ray.dir, 0.0), shine);
+                        col[i] += light->color[i] * coEfficients[2] * pow(max((-ray.dir)^R_ray.dir, 0.0), shine);
                     }else {
                         //diffuse lighting component
-                        col[i] += l->color[i] * coEfficients[1] * max((-L_ray.dir)^N_ray.dir, 0.0) * color[i];
+                        col[i] += light->color[i] * coEfficients[1] * max((-L_ray.dir)^N_ray.dir, 0.0) * color[i];
                         //specular lighting component
-                        col[i] += l->color[i] * coEfficients[2] * pow(max((-ray.dir)^R_ray.dir, 0.0), shine);
+                        col[i] += light->color[i] * coEfficients[2] * pow(max((-ray.dir)^R_ray.dir, 0.0), shine);
                     }
-
                 }
 
-            }
 
-
-
-            //Other codes here//
-
+            }// end of diffuse, specular loop ========================
 
             //keep colors within range:
             for(int i=0; i<3; i++) if(col[i] > 1.0) col[i] = 1.0;
             for(int i=0; i<3; i++) if(col[i] < ZERO) col[i] = 0.0;
+
+        }// end of function ================================================================
+
+
+
+
+        // GENERIC RECURSIVE REFLECTION FUNCTION FOR ALL OBJECTS =========================================
+        void recursive_reflection(Ray ray, double *col, int level, double tMin)
+        {
+            //the last bounce of light is done
+            if(level >= recursion_level) return;
+
+            //Ray L_ray = ray; given as parameter | N_ray = Ray of Normal | R_ray = Ray of Reflection
+            Vector3D intersec_point = ray.start + ray.dir * tMin;
+            Ray N_ray = get_normal(intersec_point, ray);
+            Vector3D R_dir = ray.dir - N_ray.dir * ((ray.dir^N_ray.dir)*2); //R = L - 2(L.N)N
+            Ray R_ray = Ray(intersec_point, R_dir);
+            R_ray.start = R_ray.start + R_ray.dir * ZERO;
+
+            double nearest = INT_MAX;
+            double tmin_temp = INF;
+            for(int k=0; k<objects.size(); k++) {
+                double t = objects.at(k)->intersect(R_ray, col, 0);
+                if(t>0.0 && t<tmin_temp) {
+                    tmin_temp = t; nearest = k;
+                }
+            }
+
+            if (nearest == INT_MAX) return; //no object reflects the light :(
+
+            //empty color array to find reflected color
+            double *color_temp = new double[3];
+            for (int i = 0; i < 3; i++) color_temp[i] = 0;
+
+            //sets the reflected color
+            tmin_temp = objects[nearest]->intersect(R_ray, color_temp, level + 1);
+            for (int i = 0; i < 3; i++) col[i] += color_temp[i] * coEfficients[3];
+
+            //always clear memory :-D
+            delete[] color_temp;
         }
 
 };
 
-
+// ============================================
 
 
 
@@ -361,6 +405,11 @@ class Sphere : public Object{
 
             //illumination function same for all
             illuminate(ray, col, tMin);
+
+            //recursive reflection of light
+            recursive_reflection(ray, col, level, tMin);
+
+            //return min val of intersection equation parameter: t
             return tMin;
         }
 
@@ -438,6 +487,11 @@ class Triangle : public Object{
 
             //illumination function same for all
             illuminate(ray, col, tMin);
+
+            //recursive reflection of light
+            recursive_reflection(ray, col, level, tMin);
+
+            //return min val of intersection equation parameter: t
             return tMin;
         }
 };
@@ -544,6 +598,11 @@ class General : public Object{
 
             //illumination function same for all
             illuminate(ray, col, tMin);
+
+            //recursive reflection of light
+            recursive_reflection(ray, col, level, tMin);
+
+            //return min val of intersection equation parameter: t
             return tMin;
         }
 };
@@ -622,7 +681,7 @@ class Floor : public Object{
         {
             Vector3D n(0, 0, 1);
             //if cosine -ve, take -ve z-axis aka eye below floor
-            // if((n^c_pos) < ZERO) n = -n;
+            if(c_pos.z < 0.0) n = -n;
 
             double denom = n^ray.dir;
             if(denom == 0.0) return -1.0;
@@ -642,6 +701,11 @@ class Floor : public Object{
 
             //illumination function same for all
             illuminate(ray, col, tMin, true);
+
+            //recursive reflection of light
+            recursive_reflection(ray, col, level, tMin);
+
+            //return min val of intersection equation parameter: t
             return tMin;
         }
 

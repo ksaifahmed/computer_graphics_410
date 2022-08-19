@@ -16,7 +16,7 @@ int drawgrid;
 int drawaxes;
 
 //Global data
-int recursion_level, imageWidth, imageHeight;
+int imageWidth, imageHeight;
 int bmp_counter = 0;
 
 int windowHeight = 500;
@@ -44,11 +44,6 @@ void drawAxes()
 	}
 }
 
-
-double rad(double deg)
-{
-    return (pi * deg) / 180.0;
-}
 
 // capture method =======================================
 void capture()
@@ -233,11 +228,8 @@ void display(){
     for(int i=0; i<objects.size(); i++)
         objects.at(i)->draw();
 
-    for(int i=0; i<pointlights.size(); i++)
-        pointlights.at(i)->draw();
-
-    for(int i=0; i<spotlights.size(); i++)
-        spotlights.at(i)->draw();
+    for(int i=0; i<lights_list.size(); i++)
+        lights_list.at(i)->draw();
 
 	glutSwapBuffers();
 }
@@ -312,8 +304,8 @@ void loadData(){
         for(int i=0; i<n; i++){
             PointLight *p = new PointLight();
             p->read_pointlight(ifs);
-            //p->print();
-            pointlights.push_back(p);
+            p->print();
+            lights_list.push_back(p);
         }
 
         ifs >> n;
@@ -321,14 +313,14 @@ void loadData(){
         for(int i=0; i<n; i++){
             SpotLight *p = new SpotLight();
             p->read_spotlight(ifs);
-            //p->print();
-            spotlights.push_back(p);
+            p->print();
+            //lights_list.push_back(p);
         }
 
         Floor *f = new Floor(1000, 20);
         f->setColor(1.0, 1.0, 1.0);
-        f->setCoEfficients(0.2, 0.2, 0.2, 0.2);
-        f->setShine(10);
+        f->setCoEfficients(0.3, 0.3, 0.3, 0.0);
+        f->setShine(20);
         objects.push_back(f);
 
     } else {
@@ -353,11 +345,8 @@ void clear_vectors()
     deleter(objects.begin(), objects.end());
     objects.clear();
 
-    deleter(pointlights.begin(), pointlights.end());
-    pointlights.clear();
-
-    deleter(spotlights.begin(), spotlights.end());
-    spotlights.clear();
+    deleter(lights_list.begin(), lights_list.end());
+    lights_list.clear();
 }
 
 int main(int argc, char **argv){
