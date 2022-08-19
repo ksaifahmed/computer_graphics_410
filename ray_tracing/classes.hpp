@@ -133,6 +133,7 @@ vector <SpotLight *> spotlights;
 //====================OBJECT CLASS START==========================================
 class Object;
 vector <Object *> objects;
+double floor_size, tile_size;
 
 class Object{
     public:
@@ -155,46 +156,67 @@ class Object{
             return -1.0;
         }
 
-        void illuminate(Ray ray, double *col, double tMin)
+        void illuminate(Ray ray, double *col, double tMin, bool isFloor=false)
         {
-            for(int i=0; i<3; i++)
-                col[i] += color[i] * coEfficients[0]; //AMBIENT
-
             Vector3D intersec_point = ray.start + ray.dir * tMin;
+            double floor_col = 0;
+            int tile_row, tile_col;
+            if(isFloor)
+            {
+                tile_row = (intersec_point.x + floor_size/2.0) / tile_size;
+                tile_col = (intersec_point.y + floor_size/2.0) / tile_size;
+                if((tile_col+tile_row)%2 == 1) floor_col = 1; //white if odd
+                else return; //LIGHTING NOT DONE FOR DARK TILES!!! ==============================
+                //Ambient Lighting for Floor
+                for(int i=0; i<3; i++)
+                    col[i] += floor_col * coEfficients[0]; //AMBIENT
+            } else {
+                //Ambient Lighting for others
+                for(int i=0; i<3; i++)
+                    col[i] += color[i] * coEfficients[0]; //AMBIENT
+            }
+
+            //Specular and Diffuse Lighting
             for (int i=0; i<pointlights.size(); i++)
             {
+                bool light_obstructed = false;
                 PointLight *l = pointlights.at(i);
-                bool shaded = false;
-                Ray incident = Ray(l->light_pos, intersec_point - (l->light_pos));
-                Ray normal = get_normal(intersec_point, incident);
-                Ray reflected = Ray(intersec_point, incident.dir - normal.dir * ((incident.dir^normal.dir)*2)  ); //R = L - 2(L.N)N
+                Vector3D incident_vect = intersec_point - l->light_pos;
 
-                double selft = (intersec_point - (l->light_pos)).get_length();
-
-                if (selft < ZERO)
+                double light_distance = incident_vect.get_length();
+                if (light_distance < ZERO) //light source inside object
                     continue;
 
-                for(int k=0; k<objects.size(); k++)
-                {
-                    Object *o = objects.at(k);
-                    double ot = o->intersect(incident, col, 0);
-                    if (ot > 0 && ot + ZERO < selft)
-                    {
-                        shaded = true;
+                Ray L_ray = Ray(l->light_pos, incident_vect);
+                Ray N_ray = get_normal(intersec_point, L_ray);
+                Vector3D R_dir = L_ray.dir - N_ray.dir * ((L_ray.dir^N_ray.dir)*2); //R = L - 2(L.N)N
+                Ray R_ray = Ray(intersec_point, R_dir);
+
+                //SHADOWS: is the incident ray being blocked by an object?
+                for(int k=0; k<objects.size(); k++){
+                    double t = objects.at(k)->intersect(L_ray, col, 0);
+                    if (t > 0 && t + ZERO < light_distance){
+                        light_obstructed = true;
                         break;
                     }
                 }
 
-                if (!shaded)
-                {
-                    double phongValue = max(0.0, (-ray.dir)^reflected.dir);
-
-                    for (int i = 0; i < 3; i++)
-                    {
-                        col[i] += l->color[i] * coEfficients[1] * max(0.0, (-incident.dir)^normal.dir) * color[i];
-                        col[i] += l->color[i] * coEfficients[2] * pow(phongValue, shine);
+                if(light_obstructed) continue; //light
+                for (int i = 0; i < 3; i++) {
+                    if(isFloor){
+                        //diffuse lighting component
+                        col[i] += l->color[i] * coEfficients[1] * max((-L_ray.dir)^N_ray.dir, 0.0) * floor_col;
+                        //specular lighting component
+                        col[i] += l->color[i] * coEfficients[2] * pow(max((-ray.dir)^R_ray.dir, 0.0), shine);
+                    }else {
+                        //diffuse lighting component
+                        col[i] += l->color[i] * coEfficients[1] * max((-L_ray.dir)^N_ray.dir, 0.0) * color[i];
+                        //specular lighting component
+                        col[i] += l->color[i] * coEfficients[2] * pow(max((-ray.dir)^R_ray.dir, 0.0), shine);
                     }
+
                 }
+
             }
 
 
@@ -387,11 +409,11 @@ class Triangle : public Object{
 
         virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray)
         {
-            Vector3D dir = (points[1] - points[0]).cross(points[2] - points[0]);
-            if ((-incident_ray.dir^dir) >= 0) //cosine is +ve
-                return Ray(intersec_point, dir);
+            Vector3D normal = (points[1] - points[0]).cross(points[2] - points[0]);
+            if ((-incident_ray.dir^normal) >= 0) //cosine is +ve
+                return Ray(intersec_point, normal);
             else
-                return Ray(intersec_point, -dir);
+                return Ray(intersec_point, -normal);
         }
 
         double get_tMin(Ray ray)
@@ -457,8 +479,10 @@ class General : public Object{
         virtual Ray get_normal(Vector3D intersec_point, Ray incident_ray)
         {
             double x = intersec_point.x, y = intersec_point.y, z = intersec_point.z;
-            Vector3D dir(2*a*x + d*y + e*z + g, 2*b*y + d*x + f*z + h, 2*c*z + e*x + f*y + i);
-            return Ray(intersec_point, dir);
+            double x_ = 2*a*x + d*y + e*z + g;
+            double y_ = 2*b*y + d*x + f*z + h;
+            double z_ = 2*c*z + e*x + f*y + i;
+            return Ray(intersec_point, Vector3D(x_, y_, z_)); //point, dir
         }
 
         bool falls_inside_reference_cube(Vector3D point)
@@ -557,6 +581,9 @@ class Floor : public Object{
         Floor(int floorSize, int tileSize){
             length = floorSize;
             width = tileSize;
+            //global
+            floor_size = floorSize;
+            tile_size = tileSize;
         }
 
         virtual void draw(){
@@ -614,7 +641,7 @@ class Floor : public Object{
             if(level == 0) return tMin;
 
             //illumination function same for all
-            illuminate(ray, col, tMin);
+            illuminate(ray, col, tMin, true);
             return tMin;
         }
 
