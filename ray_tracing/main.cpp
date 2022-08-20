@@ -84,7 +84,7 @@ void capture()
 
             //nearest object
             nearest = INT_MAX;
-            tMin=INF;
+            tMin=INT_MAX;
             for(int k=0; k<objects.size(); k++) {
                 color[0] = 0.0; color[1] = 0.0; color[2] = 0.0;
                 t = objects.at(k)->intersect(ray, color, 0);
@@ -105,7 +105,7 @@ void capture()
 
     delete[] color; // save memory :P
 	cout << "saving image...";
-    string image_name = "E:\\CSE 410\\ray_tracing\\output_" + std::to_string(++bmp_counter) + ".bmp";
+    string image_name = "E:\\1_GRAHICS\\RayTracing\\output_" + std::to_string(++bmp_counter) + ".bmp";
 	image.save_image(image_name);
     cout << "image saved\n===================CAPTURED===========================\n\n";
 }
@@ -268,7 +268,7 @@ void init(){
 
 void loadData(){
 
-    ifstream ifs("E:\\CSE 410\\ray_tracing\\scene.txt");
+    ifstream ifs("E:\\1_GRAHICS\\RayTracing\\scene.txt");
     if(ifs.is_open()){
         ifs >> recursion_level >> imageHeight;
         imageWidth = imageHeight;

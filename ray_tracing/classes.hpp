@@ -251,7 +251,7 @@ class Object{
             R_ray.start = R_ray.start + R_ray.dir * ZERO;
 
             double nearest = INT_MAX;
-            double tmin_temp = INF;
+            double tmin_temp = INT_MAX;
             for(int k=0; k<objects.size(); k++) {
                 double t = objects.at(k)->intersect(R_ray, col, 0);
                 if(t>0.0 && t<tmin_temp) {
@@ -473,13 +473,14 @@ class Triangle : public Object{
             Vector3D A_B = points[1] - points[0];
             Vector3D C_B = points[2] - points[0];
             Vector3D D = -ray.dir;
+            //if(c_pos.z<0.0) D=-D;
 
             Vector3D solutions = solve_tri_linears(A_B.x, C_B.x, D.x, ray.start.x-points[0].x,
                                                    A_B.y, C_B.y, D.y, ray.start.y-points[0].y,
                                                    A_B.z, C_B.z, D.z, ray.start.z-points[0].z);
             if(solutions.x + solutions.y > 1) return -1.0;
             if(solutions.x < 0) return -1.0;
-            if(solutions.x < 0) return -1.0;
+            if(solutions.y < 0) return -1.0;
             //cout << "tmin is: " << solutions.z << endl;
             return solutions.z;
         }
@@ -714,7 +715,6 @@ class Floor : public Object{
 
 };
 //=======================FLOOR CLASS END==========================================
-
 
 
 
