@@ -9,7 +9,11 @@ void capture() {
 		for (int j = 0; j < H; j++)
 			image.set_pixel(i, j, 0, 0, 0);
 
-    MidpointLine(lines[0], image);
+    scanLine(lines[0], image);
+    scanLine(lines[1], image);
+    scanLine(lines[2], image);
+    scanLine(lines[3], image);
+    scanLine(lines[4], image);
 
     image.save_image("image.bmp");
 }
