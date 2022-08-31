@@ -74,7 +74,6 @@ void MidpointLine(Line line, bitmap_image &image, bool isLargeGradient, bool isG
     int y = line.y0;
 
     while (x < line.x1) {
-        cout << "(" << x << "," << y << ")" << endl;
         if (d <= 0) {
             d += incrE;
             x++;
@@ -91,10 +90,9 @@ void MidpointLine(Line line, bitmap_image &image, bool isLargeGradient, bool isG
     }    
 }
 
-void scanLine(Line line, bitmap_image &image)
+void scanLineMidPoint(Line line, bitmap_image &image)
 {
     double m = (double)(line.y1 - line.y0) / (double)(line.x1 - line.x0);
-    cout << "m = " << m << endl;
     Color color(255, 255, 255);
     if(m < 0) {
         line.x0 = -line.x0;
@@ -104,5 +102,6 @@ void scanLine(Line line, bitmap_image &image)
         color.r = 0;
         MidpointLine(line, image, abs(m) > 1, m < 0, color);
     }
+    color.b = 0;
     MidpointLine(line, image, abs(m) > 1, m < 0, color);
 }

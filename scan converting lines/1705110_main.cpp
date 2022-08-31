@@ -3,19 +3,17 @@
 using namespace std;
 
 
-void capture() {
+void captureMidPoint() {
 	bitmap_image image(W, H);
 	for (int i = 0; i < W; i++)
 		for (int j = 0; j < H; j++)
 			image.set_pixel(i, j, 0, 0, 0);
-
-    scanLine(lines[0], image);
-    scanLine(lines[1], image);
-    scanLine(lines[2], image);
-    scanLine(lines[3], image);
-    scanLine(lines[4], image);
-
-    image.save_image("image.bmp");
+    
+    for (auto & line : lines){
+        scanLineMidPoint(line, image);
+    }
+    cout << "1_R Image is captured" << endl;
+    image.save_image("1_R.bmp");
 }
 
 int main()
@@ -38,7 +36,7 @@ int main()
     for (auto & line : lines)
         cout << line;
 
-    capture();
+    captureMidPoint();
 
     fin.close();
     return 0;
