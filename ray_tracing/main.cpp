@@ -111,6 +111,31 @@ void capture()
 }
 
 
+
+// for dealloc a vector of object pointers
+template<typename Iterator>
+void deleter(Iterator start, Iterator last)
+{
+   while ( start != last ){
+       delete *start;
+       start++;
+   }
+}
+
+//dealloc the vectors
+void clear_vectors()
+{
+    cout << "Clearing Memory...";
+    deleter(objects.begin(), objects.end());
+    objects.clear();
+
+    deleter(lights_list.begin(), lights_list.end());
+    lights_list.clear();
+    cout << "Done!!!\n";
+}
+
+
+
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
@@ -142,6 +167,10 @@ void keyboardListener(unsigned char key, int x,int y){
 
 		case '0':
 			capture();
+			break;
+
+		case 'q':
+            exit(0);
 			break;
 
 		default:
@@ -329,29 +358,12 @@ void loadData(){
     }
 }
 
-// for dealloc a vector of object pointers
-template<typename Iterator>
-void deleter(Iterator start, Iterator last)
-{
-   while ( start != last ){
-       delete *start;
-       start++;
-   }
-}
 
-//dealloc the vectors
-void clear_vectors()
-{
-    deleter(objects.begin(), objects.end());
-    objects.clear();
-
-    deleter(lights_list.begin(), lights_list.end());
-    lights_list.clear();
-}
 
 int main(int argc, char **argv){
     //input from scene.txt
     std::cout << std::setprecision(7) << std::fixed;
+    atexit(clear_vectors);
     loadData();
 
 	glutInit(&argc,argv);
@@ -372,9 +384,6 @@ int main(int argc, char **argv){
 	glutMouseFunc(mouseListener);
 
 	glutMainLoop();		//The main loop of OpenGL
-
-    //clear/deallocate vectors
-    clear_vectors();
 
 	return 0;
 }
