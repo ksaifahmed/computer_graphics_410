@@ -46,7 +46,7 @@ public:
 
 vector<Line> lines;
 
-bool isInsideBounds(int x, int y)
+bool isInsideImageBounds(int x, int y)
 {
     if(x > 0 && x < W-1 && y > 0 && y < H-1)
         return true;
@@ -56,10 +56,14 @@ bool isInsideBounds(int x, int y)
 void colorImage(bitmap_image &image, int x, int y, Color color, bool isSwap=false)
 {
     if(isSwap) swap(x, y); //reflection on y=x line
-    if(!isInsideBounds(x, y))
+    if(!isInsideImageBounds(x, y))
         return;
     image.set_pixel(x, H-y, color.r, color.g, color.b);
 }
 
+bool sameSign(double a, double b)
+{
+    return (a < 0.0 && b < 0.0) || (a > 0.0 && b > 0.0);
+}
 
 #endif // INCLUDE_LINE_HPP

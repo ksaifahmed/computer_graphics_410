@@ -71,7 +71,7 @@ void IntensifyPixelWA(int x, int y, double distance, bitmap_image &image, Color 
 {
     double intensity = Filter(round(abs(distance)));
     if(isSwap) swap(x, y); //reflection on y=x line
-    if(!isInsideBounds(x, y))
+    if(!isInsideImageBounds(x, y))
         return;
     image.set_pixel(x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
 }
@@ -148,11 +148,59 @@ void scanLine_WeightedAreaSamplingAntiAliased(Line line, bitmap_image &image)
 
 
 // Anti-Aliasing using Unweighted Area Sampling =====================================================
+
+//ax+by+k = 0 is a boundary line
+double rect_up, rect_down, rect_left, rect_right; // 'k' values of rectangle boundary lines
+
+//find the values of k for the boundary lines of the rectangle
+void calculateRectangleBoundary(Line line)
+{
+    double a = line.y1 - line.y0, b = line.x0 - line.x1, c = line.x1 * line.y0 - line.x0 * line.y1;
+    rect_up = 0.5*sqrt(a*a + b*b) + c;
+    rect_down = -0.5*sqrt(a*a + b*b) + c;
+
+    rect_right = b*line.x1 - a*line.y1;
+    rect_left = b*line.x0 - a*line.y0;
+}
+
+// rectangle boundary lines:
+// ax + by + rect_up = 0
+// ax + by + rect_down = 0
+// -bx + ay + rect_right = 0
+// -bx + ay + rect_left = 0
+
+bool isInsideRectangle(int x, int y, Line line)
+{
+    double a = line.y1 - line.y0, b = line.x0 - line.x1;
+    double c = line.x1 * line.y0 - line.x0 * line.y1;
+    return !sameSign(a*x + b*y + rect_up, a*x + b*y + rect_down) &&
+           !sameSign(-b*x + a*y + rect_right, -b*x + a*y + rect_left);
+}
+
+double subPixelsX[16], subPixelsY[16];
+
+void calculateSubPixels(int x, int y)
+{
+    double x1 = (double) x - 0.375, y1 = (double) y - 0.375;
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++) {
+            subPixelsX[i*4+j] = x1 + (double)i*0.25;
+            subPixelsY[i*4+j] = y1 + (double)j*0.25;
+        }
+}
+
 void IntensifyPixelUA(int x, int y, bitmap_image &image, Color color, bool isSwap)
 {
     if(isSwap) swap(x, y); //reflection on y=x line
-    if(!isInsideBounds(x, y))
+    if(!isInsideImageBounds(x, y))
         return;
+    
+    int noOfOverlappingPixels = 0;
+    double intensity;
+    calculateSubPixels(x, y);
+
+
+
     image.set_pixel(x, H-y, color.r, color.g, color.b);
 }
 
@@ -178,6 +226,8 @@ void UnweightedAreaSamplingAntiAliasedLines(Line line, bitmap_image &image, bool
 
     int x = line.x0;
     int y = line.y0;
+
+    calculateRectangleBoundary(line);
 
     while (x < line.x1) {
         if (d < 0) {
