@@ -181,7 +181,7 @@ double subPixelsX[16], subPixelsY[16];
 
 void calculateSubPixels(int x, int y)
 {
-    double x1 = (double) x - 0.375, y1 = (double) y - 0.375;
+    double x1 = (double) x - 0.375, y1 = (double) y + 0.375;
     for(int i=0; i<4; i++)
         for(int j=0; j<4; j++) {
             subPixelsX[i*4+j] = x1 + (double)i*0.25;
@@ -189,26 +189,42 @@ void calculateSubPixels(int x, int y)
         }
 }
 
-void IntensifyPixelUA(int x, int y, bitmap_image &image, Color color, bool isSwap)
+void IntensifyPixelUA(int x, int y, Line line, bitmap_image &image, Color color, bool isSwap, bool isNeg)
 {
-    if(isSwap) swap(x, y); //reflection on y=x line
-    if(!isInsideImageBounds(x, y))
-        return;
-    
     int noOfOverlappingPixels = 0;
-    double intensity;
     calculateSubPixels(x, y);
 
+    for(int i=0; i<16; i++) {
+        if(isInsideRectangle(subPixelsX[i], subPixelsY[i], line))
+            noOfOverlappingPixels++;
+    }
 
+    if(isSwap) swap(x, y); //reflection on y=x line
+   
 
-    image.set_pixel(x, H-y, color.r, color.g, color.b);
+    //cout << "x: " << x << " y: " << y << " noOfOverlappingPixels: " << noOfOverlappingPixels << endl;
+    double intensity = (double)noOfOverlappingPixels / 16.0;
+    if(isNeg) {
+        if(isSwap){
+            if(!isInsideImageBounds(-x, y)) return;             
+            image.set_pixel(-x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
+            cout << "x: " << x << " y: " << y << " intensity: " << intensity << "isSwap" << endl;
+        }
+        else {
+            if(!isInsideImageBounds(-x, y)) return;             
+            image.set_pixel(-x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
+            cout << "x: " << x << " y: " << y << " intensity: " << intensity << "not swap" << endl;
+        }
+    } else {
+        image.set_pixel(x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
+    }
 }
 
-void colorImageUA(bitmap_image &image, int x, int y, Color color, bool isSwap)
+void colorImageUA(bitmap_image &image, int x, int y, Line line, Color color, bool isSwap, bool isNeg)
 {
-    IntensifyPixelUA(x, y, image, color, isSwap);
-    IntensifyPixelUA(x, y+1, image, color, isSwap);
-    IntensifyPixelUA(x, y-1, image, color, isSwap);
+    IntensifyPixelUA(x, y, line, image, color, isSwap, isNeg);
+    IntensifyPixelUA(x, y+1, line, image, color, isSwap, isNeg);
+    IntensifyPixelUA(x, y-1, line, image, color, isSwap, isNeg);
 }
 
 void UnweightedAreaSamplingAntiAliasedLines(Line line, bitmap_image &image, bool isLargeGradient, bool isGradientNegative, Color color)
@@ -239,11 +255,7 @@ void UnweightedAreaSamplingAntiAliasedLines(Line line, bitmap_image &image, bool
             y++;
         }
 
-        isGradientNegative
-            ? isLargeGradient
-                ? colorImageUA(image, x, -y, color, isLargeGradient)
-                : colorImageUA(image, -x, y, color, isLargeGradient)
-            : colorImageUA(image, x, y, color, isLargeGradient);
+        colorImageUA(image, x, y, line, color, isLargeGradient, isGradientNegative);
     }
 }
 
