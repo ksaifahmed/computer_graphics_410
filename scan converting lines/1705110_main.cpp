@@ -3,17 +3,31 @@
 using namespace std;
 
 
-void captureMidPoint() {
+// void captureMidPoint() {
+// 	bitmap_image image(W, H);
+// 	for (int i = 0; i < W; i++)
+// 		for (int j = 0; j < H; j++)
+// 			image.set_pixel(i, j, 0, 0, 0);
+    
+//     for (auto & line : lines){
+//         scanLineMidPoint(line, image);
+//     }
+//     cout << "1_R Image is captured" << endl;
+//     image.save_image("1_R.bmp");
+// }
+
+
+void captureWeightedAreaSampling() {
 	bitmap_image image(W, H);
 	for (int i = 0; i < W; i++)
 		for (int j = 0; j < H; j++)
 			image.set_pixel(i, j, 0, 0, 0);
     
     for (auto & line : lines){
-        scanLineMidPoint(line, image);
+        GuptaSproullAntiAliasedLines(line, image);
     }
-    cout << "1_R Image is captured" << endl;
-    image.save_image("1_R.bmp");
+    cout << "3_RWA Image is captured" << endl;
+    image.save_image("3_RWA.bmp");
 }
 
 int main()
@@ -36,7 +50,8 @@ int main()
     for (auto & line : lines)
         cout << line;
 
-    captureMidPoint();
+    //captureMidPoint();
+    captureWeightedAreaSampling();
 
     fin.close();
     return 0;
