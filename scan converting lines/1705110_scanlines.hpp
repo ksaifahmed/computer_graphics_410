@@ -199,7 +199,7 @@ void IntensifyPixelUA(int x, int y, Line line, bitmap_image &image, Color color,
 
     if(isSwap) swap(x, y); //reflection on y=x line
    
-    double intensity = 1 - (double)noOfOverlappingPixels / 16.0;
+    double intensity = 1-((double)noOfOverlappingPixels / 32.0);
     if(isNeg) {
         if(isSwap){
             if(!isInsideImageBounds(-x, y)) return;             
@@ -210,6 +210,7 @@ void IntensifyPixelUA(int x, int y, Line line, bitmap_image &image, Color color,
             image.set_pixel(-x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
         }
     } else {
+        if(!isInsideImageBounds(x, y)) return;  
         image.set_pixel(x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
     }
 }
@@ -256,6 +257,8 @@ void UnweightedAreaSamplingAntiAliasedLines(Line line, bitmap_image &image, bool
 void scanLine_UnweightedAreaSamplingAntiAliased(Line line, bitmap_image &image)
 {
     double m = (double)(line.y1 - line.y0) / (double)(line.x1 - line.x0);
+    bool isLargeGradient = abs(m) > 1;
+    cout << "m = " << m << ", " << isLargeGradient << endl;
     Color color = line.color;
     if(m < 0) {
         line.x0 = -line.x0;
