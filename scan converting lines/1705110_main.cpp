@@ -1,20 +1,20 @@
 #include <bits/stdc++.h>
-#include "1705110_line.hpp"
+#include "1705110_scanlines.hpp"
 using namespace std;
 
 
-// void captureMidPoint() {
-// 	bitmap_image image(W, H);
-// 	for (int i = 0; i < W; i++)
-// 		for (int j = 0; j < H; j++)
-// 			image.set_pixel(i, j, 0, 0, 0);
-    
-//     for (auto & line : lines){
-//         scanLineMidPoint(line, image);
-//     }
-//     cout << "1_R Image is captured" << endl;
-//     image.save_image("1_R.bmp");
-// }
+void captureMidPoint() {
+	bitmap_image image(W, H);
+	for (int i = 0; i < W; i++)
+		for (int j = 0; j < H; j++)
+			image.set_pixel(i, j, 0, 0, 0);
+
+    for (auto & line : lines){
+        scanLine_MidPoint(line, image);
+    }
+    cout << "1_R Image is captured" << endl;
+    image.save_image("1_R.bmp");
+}
 
 
 void captureWeightedAreaSampling() {
@@ -22,9 +22,9 @@ void captureWeightedAreaSampling() {
 	for (int i = 0; i < W; i++)
 		for (int j = 0; j < H; j++)
 			image.set_pixel(i, j, 0, 0, 0);
-    
+
     for (auto & line : lines){
-        GuptaSproullAntiAliasedLines(line, image);
+        scanLine_WeightedAreaSamplingAntiAliased(line, image);
     }
     cout << "3_RWA Image is captured" << endl;
     image.save_image("3_RWA.bmp");
@@ -50,7 +50,7 @@ int main()
     for (auto & line : lines)
         cout << line;
 
-    //captureMidPoint();
+    captureMidPoint();
     captureWeightedAreaSampling();
 
     fin.close();
