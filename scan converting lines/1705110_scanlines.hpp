@@ -45,16 +45,14 @@ void MidpointLine(Line line, bitmap_image &image, bool isLargeGradient, bool isG
 void scanLine_MidPoint(Line line, bitmap_image &image)
 {
     double m = (double)(line.y1 - line.y0) / (double)(line.x1 - line.x0);
-    Color color(255, 255, 255);
+    Color color = line.color;
     if(m < 0) {
         line.x0 = -line.x0;
         line.x1 = -line.x1;
         swap(line.x0, line.x1);
         swap(line.y0, line.y1);
-        //color.r = 0;
         MidpointLine(line, image, abs(m) > 1, m < 0, color);
     }
-    //color.b = 0;
     MidpointLine(line, image, abs(m) > 1, m < 0, color);
 }
 // ==================================================================================================
@@ -64,12 +62,12 @@ void scanLine_MidPoint(Line line, bitmap_image &image)
 
 // Anti-Aliasing using Weighted Area Sampling =======================================================
 double Filter(int distance){
-    return max(0.0, 1-0.25*distance);
+    return max(0.0, 0.25*distance);
 }
 
 void IntensifyPixelWA(int x, int y, double distance, bitmap_image &image, Color color, bool isSwap)
 {
-    double intensity = Filter(round(abs(distance)));
+    double intensity = 1-Filter(round(abs(distance)));
     if(isSwap) swap(x, y); //reflection on y=x line
     if(!isInsideImageBounds(x, y))
         return;
@@ -82,8 +80,8 @@ void colorImageWA(bitmap_image &image, int x, int y, Color color, bool isSwap, i
     IntensifyPixelWA(x, y, two_v_dx * invDenom, image, color, isSwap);
     IntensifyPixelWA(x, y + 1, two_dx_invDenom - two_v_dx * invDenom, image, color, isSwap);
     IntensifyPixelWA(x, y - 1, two_dx_invDenom + two_v_dx * invDenom, image, color, isSwap);
-    IntensifyPixelWA(x, y + 2, 2*two_dx_invDenom - (two_v_dx * invDenom), image, color, isSwap);
-    IntensifyPixelWA(x, y - 2, 2*two_dx_invDenom + (two_v_dx * invDenom), image, color, isSwap);
+    // IntensifyPixelWA(x, y + 2, 2*two_dx_invDenom - (two_v_dx * invDenom), image, color, isSwap);
+    // IntensifyPixelWA(x, y - 2, 2*two_dx_invDenom + (two_v_dx * invDenom), image, color, isSwap);
 }
 
 void WeightedAreaSamplingAntiAliased(Line line, bitmap_image &image, bool isLargeGradient, bool isGradientNegative, Color color)
@@ -130,7 +128,7 @@ void WeightedAreaSamplingAntiAliased(Line line, bitmap_image &image, bool isLarg
 void scanLine_WeightedAreaSamplingAntiAliased(Line line, bitmap_image &image)
 {
     double m = (double)(line.y1 - line.y0) / (double)(line.x1 - line.x0);
-    Color color(255, 255, 255);
+    Color color = line.color;
     if(m < 0) {
         line.x0 = -line.x0;
         line.x1 = -line.x1;
@@ -201,19 +199,15 @@ void IntensifyPixelUA(int x, int y, Line line, bitmap_image &image, Color color,
 
     if(isSwap) swap(x, y); //reflection on y=x line
    
-
-    //cout << "x: " << x << " y: " << y << " noOfOverlappingPixels: " << noOfOverlappingPixels << endl;
-    double intensity = (double)noOfOverlappingPixels / 16.0;
+    double intensity = 1 - (double)noOfOverlappingPixels / 16.0;
     if(isNeg) {
         if(isSwap){
             if(!isInsideImageBounds(-x, y)) return;             
             image.set_pixel(-x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
-            cout << "x: " << x << " y: " << y << " intensity: " << intensity << "isSwap" << endl;
         }
         else {
             if(!isInsideImageBounds(-x, y)) return;             
             image.set_pixel(-x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
-            cout << "x: " << x << " y: " << y << " intensity: " << intensity << "not swap" << endl;
         }
     } else {
         image.set_pixel(x, H-y, color.r*intensity, color.g*intensity, color.b*intensity);
@@ -262,7 +256,7 @@ void UnweightedAreaSamplingAntiAliasedLines(Line line, bitmap_image &image, bool
 void scanLine_UnweightedAreaSamplingAntiAliased(Line line, bitmap_image &image)
 {
     double m = (double)(line.y1 - line.y0) / (double)(line.x1 - line.x0);
-    Color color(255, 255, 255);
+    Color color = line.color;
     if(m < 0) {
         line.x0 = -line.x0;
         line.x1 = -line.x1;

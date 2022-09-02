@@ -12,11 +12,13 @@ class Color {
 public:
     int r, g, b;
     Color(int r, int g, int b) : r(r), g(g), b(b) {};
+    Color() : r(0), g(0), b(0) {};
 };
 
 class Line {
 public:
     int x0, y0, x1, y1;
+    Color color;
     Line(int x0, int y0, int x1, int y1) {
         this->x0 = x0;
         this->y0 = y0;
@@ -40,6 +42,7 @@ public:
     friend istream &operator>>(istream &ins, Line &line)
     {
         ins >> line.x0 >> line.y0 >> line.x1 >> line.y1;
+        ins >> line.color.r >> line.color.g >> line.color.b;
         return ins;
     }
 };

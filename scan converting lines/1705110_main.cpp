@@ -7,7 +7,7 @@ void capture_MidPoint() {
 	bitmap_image image(W, H);
 	for (int i = 0; i < W; i++)
 		for (int j = 0; j < H; j++)
-			image.set_pixel(i, j, 0, 0, 0);
+			image.set_pixel(i, j, 255, 255, 255);
 
     for (auto & line : lines){
         scanLine_MidPoint(line, image);
@@ -20,7 +20,7 @@ void capture_UnweightedAreaSampling() {
     bitmap_image image(W, H);
     for (int i = 0; i < W; i++)
         for (int j = 0; j < H; j++)
-            image.set_pixel(i, j, 0, 0, 0);
+            image.set_pixel(i, j, 255, 255, 255);
 
     for (auto & line : lines){
         scanLine_UnweightedAreaSamplingAntiAliased(line, image);
@@ -34,7 +34,7 @@ void capture_WeightedAreaSampling() {
 	bitmap_image image(W, H);
 	for (int i = 0; i < W; i++)
 		for (int j = 0; j < H; j++)
-			image.set_pixel(i, j, 0, 0, 0);
+			image.set_pixel(i, j, 255, 255, 255);
 
     for (auto & line : lines){
         scanLine_WeightedAreaSamplingAntiAliased(line, image);
